@@ -8,10 +8,10 @@ export default function Landing() {
       <section className="flex flex-1 flex-col justify-center py-10">
         <p className="text-sm font-semibold uppercase tracking-wider text-azul">ExpoHost Bogotá 2026 · 6 y 7 de octubre</p>
         <h1 className="mt-3 text-4xl font-extrabold leading-tight">
-          A la expo no se llega a buscar. <span className="text-azul">Se llega con el match hecho.</span>
+          Haz match antes de Expohost. <span className="text-azul">Conecta en persona durante la feria.</span>
         </h1>
         <p className="mt-5 text-lg text-tinta-suave">
-          Cuéntanos qué buscas o qué ofreces y armamos tu agenda de reuniones antes de que pises Expohost.
+          Cuéntanos qué buscas o qué ofreces y te ayudamos a encontrar personas afines para agendar reuniones el 6 y 7 de octubre en Bogotá.
         </p>
       </section>
       <div className="space-y-4">

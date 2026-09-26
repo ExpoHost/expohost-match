@@ -85,7 +85,8 @@ Remitente: match@match.expohost.travel (cuando Resend esté conectado). Tono: ej
 - Botones tipo píldora (border-radius 999px). Tarjetas con radio 22px y sombra suave.
 - Logotipo: tres arcos (azul, turquesa, rosa) + "EXPOHOST MATCH" (MATCH en azul). SVG:
   `<svg viewBox="0 0 88 52" fill="none"><path d="M4 50 C4 22, 24 10, 26 34 L26 50" stroke="#0049FE" stroke-width="9" stroke-linecap="round"/><path d="M30 50 C30 20, 50 8, 52 32 L52 50" stroke="#00D1D1" stroke-width="9" stroke-linecap="round"/><path d="M56 50 C56 18, 74 6, 84 14" stroke="#FF3772" stroke-width="9" stroke-linecap="round"/></svg>`
-- Copy de la landing: "A la expo no se llega a buscar. Se llega con el match hecho." Subtítulo: "Cuéntanos qué buscas o qué ofreces y armamos tu agenda de reuniones antes de que pises Expohost." Nota visible: "En la feria entra con tus datos móviles."
+- Copy de la landing (cambiado por Lina el 26-sep): "Haz match antes de Expohost. Conecta en persona durante la feria." Subtítulo: "Cuéntanos qué buscas o qué ofreces y te ayudamos a encontrar personas afines para agendar reuniones el 6 y 7 de octubre en Bogotá."
+- Logotipo (26-sep): se redibujó como la cinta continua de arcos inclinados con degradado azul → turquesa → rosa → naranja del logo real de ExpoHost (`src/components/Logo.tsx`); el SVG de abajo quedó como referencia antigua. Nota visible: "En la feria entra con tus datos móviles."
 - Tono: ejecutivo, claro, cálido, sin urgencia fabricada, un solo CTA por pantalla, sin emojis.
 - Mobile-first: todo usable con una mano en 375 px; pulsables ≥ 44 px; contraste WCAG AA; respetar `prefers-reduced-motion`. ✕ y ♥ siempre como botones grandes; el swipe es adicional; "Deshacer" para el último ✕.
 
@@ -113,7 +114,7 @@ Al cerrar cada fase: resumen de lo hecho, lo pendiente y las decisiones que nece
 ## Estado
 
 - [x] Fase 0 (sáb 26: schema aplicado y 21 pruebas pasando; workflow de Pages listo)
-- [ ] Fase 1
+- [x] Fase 1 (sáb 26: landing, registro en 3 pasos con consentimiento, acceso por código o botón, perfil y edición; probado en navegador)
 - [ ] Fase 2
 - [ ] Prueba interna sábado 26
 - [ ] Fase 3
@@ -127,7 +128,10 @@ Al cerrar cada fase: resumen de lo hecho, lo pendiente y las decisiones que nece
 
 - 26-sep: el proyecto Supabase quedó en la región **us-east-2 (Ohio)**, no us-east-1. Sin impacto. Conexión directa a la base por el pooler `aws-0-us-east-2.pooler.supabase.com:5432`, usuario `postgres.ujfhvhoutlqphbpwrgfq`.
 - 26-sep, ajustes al schema aprobados por Lina: (1) tipo, tier, empresa, activo e invitado del perfil solo los cambia el admin (trigger `proteger_perfil`); (2) se quitó la política "participante confirma" y se creó la RPC `confirmar_reunion`; (3) los usuarios solo crean empresas de asistente; quien quiere ser expositor lo pide en el registro como "expositor con stand" (debe escribir su número de stand, doble verificación) o "expositor sin stand", y el admin aprueba con `aprobar_expositor`; (4) el tope diario de ♥ cuenta días en hora de Bogotá; (5) el feed solo muestra perfiles con al menos una etiqueta Busco u Ofrezco; (6) nadie sin sesión ejecuta funciones. Además: RPC `completar_registro` (guarda perfil, empresa/solicitud y teléfono en un paso), `registrar_consentimiento` toma IP y user agent de las cabeceras, bucket privado `fotos`.
-- Enlace del correo de acceso: usa `{{ .TokenHash }}` hacia `#/verificar` en vez de `{{ .ConfirmationURL }}`, porque funciona aunque el correo se abra en otro navegador del celular y no choca con el HashRouter. Plantilla en `supabase/plantillas/acceso.html` (va en "Magic Link" y en "Confirm signup").
+- Correo de acceso (decisión de Lina, 26-sep): botón "Entrar a Expohost Match" con `{{ .ConfirmationURL }}` y el código `{{ .Token }}` debajo. Plantillas en `supabase/plantillas/magic.html` ("Magic Link", personas con perfil) y `confirmacion.html` ("Confirm signup", personas nuevas); el logo del correo es `public/correo/arcos.png`. La app usa flujo `implicit` (sirve aunque el correo se abra en otro navegador) y `src/main.tsx` procesa el `#access_token=...` del regreso antes del HashRouter.
+- Código de 6 dígitos (el proyecto venía con 8; se cambió por API el 26-sep).
+- Sesión de 7 días: el plan Free no permite limitar sesiones ("Pro Plans and up"), así que la app cierra la sesión si pasaron 7 días desde `last_sign_in_at` (`src/lib/sesion.tsx`).
+- Mientras no esté Resend, el correo de Supabase solo llega a miembros de la organización y máximo 2 por hora: la prueba del 26 la hace Lina sola con management@expohost.travel, con perfiles de demostración para poder hacer match.
 - La publishable key y la URL de Supabase están directamente en `src/lib/supabase.ts` (son públicas); el workflow no necesita variables.
 - Pruebas de la base: `node --env-file=.env.pruebas supabase/pruebas.cjs` (ver cabecera del archivo).
 
