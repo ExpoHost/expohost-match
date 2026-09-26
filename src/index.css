@@ -1,0 +1,29 @@
+@import "tailwindcss";
+
+@theme {
+  --font-sans: "Montserrat", system-ui, sans-serif;
+  --color-azul: #0049FE;
+  --color-turquesa: #00D1D1;
+  --color-rosa: #FF3772;
+  --color-naranja: #FF8000;
+  --color-tinta: #0D0D16;
+  --color-tinta-suave: #4A4B58;
+  --color-hueso: #F7F8FC;
+  --color-linea: #E4E6F0;
+  --radius-card: 22px;
+  --shadow-suave: 0 6px 24px rgba(13, 13, 22, 0.07);
+}
+
+html, body { background: var(--color-hueso); color: var(--color-tinta); }
+body { font-family: var(--font-sans); -webkit-font-smoothing: antialiased; }
+
+@utility btn { @apply inline-flex min-h-12 items-center justify-center gap-2 rounded-full px-6 font-semibold transition focus-visible:outline-3 focus-visible:outline-offset-2 focus-visible:outline-azul disabled:opacity-50; }
+@utility btn-primario { @apply btn bg-azul text-white hover:bg-[#003bd1]; }
+@utility btn-secundario { @apply btn border border-linea bg-white text-tinta hover:border-tinta-suave; }
+@utility tarjeta { @apply rounded-[22px] bg-white shadow-suave; }
+@utility campo { @apply mt-1 block min-h-12 w-full rounded-2xl border border-linea bg-white px-4 text-base text-tinta placeholder:text-tinta-suave/60 focus:border-azul focus:outline-none focus:ring-2 focus:ring-azul/20; }
+@utility etiqueta { @apply block text-sm font-semibold text-tinta; }
+
+@media (prefers-reduced-motion: reduce) {
+  *, *::before, *::after { animation-duration: 0.01ms !important; transition-duration: 0.01ms !important; }
+}
