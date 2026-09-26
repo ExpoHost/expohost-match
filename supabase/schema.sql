@@ -621,9 +621,10 @@ alter table public.surveys            enable row level security;
 alter table public.audit_events       enable row level security;
 
 -- catálogos: lectura para autenticados, escritura admin
-create policy "leer catalogos" on public.tags for select to authenticated using (true);
+-- etiquetas y categorías también sin sesión: el registro las muestra antes de confirmar el correo
+create policy "leer catalogos" on public.tags for select to anon, authenticated using (true);
 create policy "admin tags" on public.tags for all to authenticated using (public.is_admin()) with check (public.is_admin());
-create policy "leer categorias" on public.categories for select to authenticated using (true);
+create policy "leer categorias" on public.categories for select to anon, authenticated using (true);
 create policy "admin categorias" on public.categories for all to authenticated using (public.is_admin()) with check (public.is_admin());
 create policy "leer afinidad" on public.category_affinity for select to authenticated using (true);
 create policy "admin afinidad" on public.category_affinity for all to authenticated using (public.is_admin()) with check (public.is_admin());
