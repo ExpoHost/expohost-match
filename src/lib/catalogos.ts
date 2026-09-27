@@ -11,7 +11,7 @@ export const FRANJAS = [
 export const PARTICIPACION = [
   { id: '', nombre: 'Asistente', detalle: 'Vengo a la feria a conocer y hacer negocios.' },
   { id: 'expositor_stand', nombre: 'Expositor con stand', detalle: 'Mi empresa tiene stand en la feria.' },
-  { id: 'expositor_sin_stand', nombre: 'Expositor sin stand', detalle: 'Participo como expositor, pero sin stand propio.' },
+  { id: 'expositor_sin_stand', nombre: 'Empresa/servicio sin stand', detalle: 'Ofrezco productos o servicios, pero no tengo stand en la feria.' },
 ] as const
 
 export const CONSENT_VERSION = '2026-09-24'
