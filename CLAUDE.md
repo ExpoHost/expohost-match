@@ -96,9 +96,9 @@ Propiedades para operar · Capital / inversión · Property management · Tecnol
 
 ## Categorías de participante
 
-Inversionistas y capital · Propietarios y anfitriones · Property managers · Constructoras y desarrolladores · Tecnología · Proveedores · Marketing y demanda · Hotelería · Institucionales y gremios.
+Inversionistas y capital · Propietarios y anfitriones · Property managers · Constructoras y desarrolladores · Tecnología · Proveedores · Marketing y demanda · Hotelería · Hostales · Senior living · Coliving · Institucionales y gremios · Otro. (Hostales, Senior living, Coliving y Otro se agregaron el 26-sep a pedido de Lina; "Otro" no tiene afinidades.)
 
-Categorías complementarias (para el score): Inversionistas ↔ Constructoras, Propietarios, Property managers · Propietarios ↔ Property managers, Tecnología, Proveedores · Property managers ↔ Tecnología, Proveedores, Marketing, Propietarios, Constructoras · Constructoras ↔ Inversionistas, Property managers · Tecnología ↔ Property managers, Hotelería, Propietarios · Proveedores ↔ Property managers, Hotelería, Propietarios · Marketing ↔ Property managers, Hotelería · Hotelería ↔ Tecnología, Proveedores, Marketing · Institucionales ↔ todas.
+Categorías complementarias (para el score): Inversionistas ↔ Constructoras, Propietarios, Property managers · Propietarios ↔ Property managers, Tecnología, Proveedores · Property managers ↔ Tecnología, Proveedores, Marketing, Propietarios, Constructoras · Constructoras ↔ Inversionistas, Property managers · Tecnología ↔ Property managers, Hotelería, Propietarios · Proveedores ↔ Property managers, Hotelería, Propietarios · Marketing ↔ Property managers, Hotelería · Hotelería ↔ Tecnología, Proveedores, Marketing · Hostales ↔ Tecnología, Proveedores, Marketing, Inversionistas · Senior living ↔ Inversionistas, Constructoras, Proveedores, Tecnología · Coliving ↔ Inversionistas, Constructoras, Property managers, Tecnología, Proveedores, Marketing · Institucionales ↔ todas (menos Otro).
 
 ## Fases
 
