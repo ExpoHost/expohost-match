@@ -16,6 +16,7 @@ export default function Agendar() {
   const [error, setError] = useState<string | null>(null)
   const [reservando, setReservando] = useState<number | null>(null)
   const [confirmarDeshacer, setConfirmarDeshacer] = useState(false)
+  const [enEspera, setEnEspera] = useState<number | null>(null)
   const navigate = useNavigate()
 
   async function deshacer() {
@@ -85,7 +86,12 @@ export default function Agendar() {
           <div className="mt-4 space-y-3">
             {propuestas === null && <p className="text-tinta-suave" role="status">Buscando horarios…</p>}
             {propuestas?.length === 0 && (
-              <Aviso tipo="info">No encontramos un horario libre para ambos. Revisa tus franjas de disponibilidad en <Link to="/perfil/editar" className="inline-flex min-h-11 items-center font-semibold underline">tu perfil</Link> o intenta más tarde.</Aviso>
+              <div className="space-y-3">
+                <Aviso tipo="info">No encontramos un horario libre para ambos. Revisa tus franjas de disponibilidad en <Link to="/perfil/editar" className="inline-flex min-h-11 items-center font-semibold underline">tu perfil</Link> o intenta más tarde.</Aviso>
+                {enEspera === null
+                  ? <button className="btn-secundario w-full" onClick={async () => { const { data, error } = await supabase.rpc('lista_de_espera', { p_match: id }); if (error) setError(mensajeError(error)); else setEnEspera(data ?? 0) }}>Anotarme en la lista de espera</button>
+                  : <Aviso tipo="ok">Quedaste en la lista de espera. Si se libera un horario, la organización te avisará en la feria.</Aviso>}
+              </div>
             )}
             {propuestas?.map((p) => (
               <button key={p.block_id} onClick={() => reservar(p)} disabled={reservando !== null}

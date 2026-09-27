@@ -6,7 +6,10 @@
   "scripts": {
     "dev": "vite",
     "build": "tsc -b && vite build",
-    "preview": "vite preview"
+    "preview": "vite preview",
+    "backup": "node --env-file=.env.backup scripts/backup.mjs",
+    "pruebas": "node --env-file=.env.pruebas supabase/pruebas.cjs && node --env-file=.env.pruebas supabase/pruebas-fase3.cjs && node --env-file=.env.pruebas supabase/pruebas-fase4.cjs",
+    "intrusion": "node --env-file=.env.pruebas supabase/intrusion.cjs"
   },
   "dependencies": {
     "@supabase/supabase-js": "^2.117.2",
@@ -20,6 +23,7 @@
     "@types/react": "^18.3.31",
     "@types/react-dom": "^18.3.7",
     "@vitejs/plugin-react": "^6.1.1",
+    "pg": "^8.23.0",
     "tailwindcss": "^4.3.3",
     "typescript": "^5.9.3",
     "vite": "^8.3.1"

@@ -7,6 +7,41 @@ import { diaTexto, hora, horaFin, lugarTexto } from '../../lib/reuniones'
 import { mensajeError } from '../../lib/utilidades'
 import { ASISTENCIA, type Asistencia, type ReunionAdmin } from './tipos'
 
+type BloqueSimple = { id: number; dia: string; inicio: string; bloqueado: boolean }
+type Espera = { block_id: number; dia: string; inicio: string; personas: number; nombres: string }
+
+// Cambiar bloque y/o lugar de una reunión confirmada (la base valida choques de personas y mesas)
+function Reasignar({ r, bloques, onListo, onError }: { r: ReunionAdmin; bloques: BloqueSimple[]; onListo: () => void; onError: (m: string) => void }) {
+  const [block, setBlock] = useState(r.block_id)
+  const [lugar, setLugar] = useState<'stand' | 'mesa'>(r.lugar)
+  const [mesa, setMesa] = useState(String(r.mesa ?? 1))
+  const [stand, setStand] = useState(r.stand ?? '')
+  const [ocupado, setOcupado] = useState(false)
+  async function guardar() {
+    setOcupado(true)
+    const { error } = await supabase.rpc('admin_reasignar', { p_meeting: r.id, p_block: block, p_lugar: lugar, p_mesa: lugar === 'mesa' ? Number(mesa) : null, p_stand: lugar === 'stand' ? stand : null })
+    setOcupado(false)
+    if (error) onError(mensajeError(error)); else { avisarReunion(r.id, 'confirmada'); onListo() }
+  }
+  return (
+    <div className="mt-3 flex flex-wrap items-end gap-2 rounded-2xl bg-hueso p-3">
+      <label className="text-xs font-semibold text-tinta-suave">Bloque
+        <select className="campo mt-0 block min-h-9 w-auto py-1 text-sm" value={block} onChange={(e) => setBlock(Number(e.target.value))}>
+          {bloques.filter((b) => !b.bloqueado).map((b) => <option key={b.id} value={b.id}>{diaTexto(b.dia).split(' ')[0]} {hora(b.inicio)}</option>)}
+        </select></label>
+      <label className="text-xs font-semibold text-tinta-suave">Lugar
+        <select className="campo mt-0 block min-h-9 w-auto py-1 text-sm" value={lugar} onChange={(e) => setLugar(e.target.value as 'stand' | 'mesa')}>
+          <option value="mesa">Zona Match</option><option value="stand">Stand</option>
+        </select></label>
+      {lugar === 'mesa'
+        ? <label className="text-xs font-semibold text-tinta-suave">Mesa<input className="campo mt-0 block min-h-9 w-20 py-1 text-sm" type="number" min={1} value={mesa} onChange={(e) => setMesa(e.target.value)} /></label>
+        : <label className="text-xs font-semibold text-tinta-suave">Stand<input className="campo mt-0 block min-h-9 w-24 py-1 text-sm" value={stand} onChange={(e) => setStand(e.target.value)} maxLength={20} /></label>}
+      <button className="btn-primario min-h-9 px-4 text-sm" disabled={ocupado} onClick={guardar}>Guardar</button>
+      <p className="w-full text-xs text-tinta-suave">Se envía un correo nuevo de confirmación a las dos personas.</p>
+    </div>
+  )
+}
+
 export default function Reuniones() {
   const [todas, setTodas] = useState<ReunionAdmin[] | null>(null)
   const [dia, setDia] = useState('2026-10-06')
@@ -14,10 +49,18 @@ export default function Reuniones() {
   const [error, setError] = useState<string | null>(null)
   const [aviso, setAviso] = useState<string | null>(null)
   const [enviandoAgenda, setEnviandoAgenda] = useState(false)
+  const [reasignando, setReasignando] = useState<string | null>(null)
+  const [bloquesTodos, setBloquesTodos] = useState<BloqueSimple[]>([])
+  const [espera, setEspera] = useState<Espera[]>([])
 
   const cargar = useCallback(async () => {
-    const { data, error } = await supabase.rpc('admin_reuniones')
+    const [{ data, error }, b, w] = await Promise.all([
+      supabase.rpc('admin_reuniones'),
+      supabase.from('blocks').select('id, dia, inicio, bloqueado').order('dia').order('inicio'),
+      supabase.rpc('admin_lista_espera'),
+    ])
     if (error) setError(mensajeError(error)); else { setTodas(data); setError(null) }
+    setBloquesTodos(b.data ?? []); setEspera(w.data ?? [])
   }, [])
   useEffect(() => {
     cargar()
@@ -68,6 +111,9 @@ export default function Reuniones() {
       <p className="text-sm text-tinta-suave">{activas.length} reuniones confirmadas en total · {lista.filter((r) => r.estado === 'confirmada').length} este día. Se actualiza cada 30 segundos. El correo de agenda sale solo el 5 y 6 de octubre a las 7 p.m.</p>
       {error && <Aviso>{error}</Aviso>}
       {aviso && <Aviso tipo="ok">{aviso}</Aviso>}
+      {espera.filter((e) => e.dia === dia).length > 0 && (
+        <Aviso tipo="info">Lista de espera este día: {espera.filter((e) => e.dia === dia).map((e) => `${hora(e.inicio)} (${e.personas}: ${e.nombres})`).join(' · ')}</Aviso>
+      )}
       {bloques.length === 0 && <p className="text-sm text-tinta-suave">Sin reuniones este día.</p>}
       {bloques.map((b) => (
         <section key={b} className="space-y-2">
@@ -76,8 +122,14 @@ export default function Reuniones() {
             <article key={r.id} className={`tarjeta p-4 ${r.estado === 'cancelada' ? 'opacity-60' : ''}`}>
               <div className="flex flex-wrap items-center justify-between gap-2">
                 <p className="font-bold text-azul">{lugarTexto(r)}{r.estado === 'cancelada' ? ' · cancelada' : ''}</p>
-                {r.estado === 'confirmada' && <button className="btn-secundario min-h-9 px-3 text-xs text-[#B0103F]" onClick={() => cancelar(r)}>Cancelar</button>}
+                {r.estado === 'confirmada' && (
+                  <div className="flex gap-2">
+                    <button className="btn-secundario min-h-9 px-3 text-xs" onClick={() => setReasignando(reasignando === r.id ? null : r.id)}>Reasignar</button>
+                    <button className="btn-secundario min-h-9 px-3 text-xs text-[#B0103F]" onClick={() => cancelar(r)}>Cancelar</button>
+                  </div>
+                )}
               </div>
+              {reasignando === r.id && <Reasignar r={r} bloques={bloquesTodos} onListo={() => { setReasignando(null); cargar() }} onError={setError} />}
               <div className="mt-2 grid gap-2 sm:grid-cols-2">
                 {[{ id: r.a_id, nombre: r.a_nombre, empresa: r.a_empresa, asis: r.asistencia_a, conf: r.confirmo_a }, { id: r.b_id, nombre: r.b_nombre, empresa: r.b_empresa, asis: r.asistencia_b, conf: r.confirmo_b }].map((p) => (
                   <div key={p.id} className="flex items-center justify-between gap-2 rounded-2xl bg-hueso px-3 py-2">

@@ -118,8 +118,8 @@ Al cerrar cada fase: resumen de lo hecho, lo pendiente y las decisiones que nece
 - [x] Fase 2 (sáb 26: Descubrir con ♥/✕/deshacer y deslizar, match, 3 horarios, Mi agenda con contacto, WhatsApp, .ics y cancelar; Edge Function `correo-reunion` publicada, envía cuando exista RESEND_API_KEY)
 - [ ] Prueba interna sábado 26 (Lina sola con management@expohost.travel; los demás cuando esté Resend)
 - [~] Fase 3 (26-sep: representantes por empresa hasta 3 con invitación por correo en el perfil; carga de expositores por CSV con invitación desde el panel, Edge Function `invitar-expositores`, plantilla "Invite user" aplicada; pruebas en `supabase/pruebas-fase3.cjs`. Pendiente: panel de expositor con notas por lead y CSV de sus matches)
-- [~] Fase 4 (26-sep: panel de organización en `/admin` con solicitudes de expositor, participantes con tier/activo y CSV, reuniones por día y bloque con asistencia y cancelación, ajustes de mesas, bloques y etiquetas. Pendiente: reasignar, lista de espera, correo de agenda del día siguiente)
-- [~] Fase 5 (26-sep: página /privacidad con textos legales, botón "Eliminar mi cuenta", meta CSP desde la Fase 0. Pendiente: prueba de intrusión con curl, script de respaldo, correo T+1, guía de despliegue y reversión)
+- [x] Fase 4 (26-sep: panel de organización en `/admin`: solicitudes, participantes, reuniones con asistencia, cancelar y **reasignar**, lista de espera, cargar expositores, lista de stands, ajustes; correo de agenda del día siguiente con "Confirmo", programado)
+- [x] Fase 5 (26-sep: /privacidad, "Eliminar mi cuenta", meta CSP, `npm run intrusion` (31 ataques bloqueados), `npm run backup`, encuesta T+1 programada con respuesta desde el correo, guía de despliegue y reversión abajo). Pendiente de Lina: DNS de Resend y prueba con el equipo.
 - [ ] Expositores cargados (mié 30)
 - [ ] Invitaciones enviadas (jue 1 / vie 2)
 - [ ] Congelado v1.0-feria (sáb 3)
@@ -157,4 +157,48 @@ Al cerrar cada fase: resumen de lo hecho, lo pendiente y las decisiones que nece
 
 ## Cómo desplegar y revertir
 
-(Claude Code completa esta sección en la Fase 5.)
+Escrito para alguien que no programa. Todo lo que dice "en el computador" se hace en la carpeta del proyecto con la terminal del Claude Code o de Windows.
+
+**Qué hay en producción**
+- La app (lo que ve la gente): https://expohost.github.io/expohost-match. Se publica sola cada vez que se sube código a la rama `main` de GitHub (Actions → "Publicar en GitHub Pages", tarda 1–2 minutos).
+- La base de datos, el acceso, las fotos y las funciones de correo: proyecto `expohost-match` en Supabase.
+- Los correos: Resend (remitente y plantillas configurados en Supabase).
+
+**Publicar un cambio de la app**
+1. En el computador: `npm run build` (comprueba que compila). Si sale un error, no seguir.
+2. `git add -A`, `git commit -m "qué cambió"`, `git push`.
+3. Esperar el visto verde en github.com/ExpoHost/expohost-match/actions. Recargar la app en el celular.
+
+**Revertir la app a la versión anterior (si algo salió mal)**
+1. En github.com/ExpoHost/expohost-match → pestaña **Actions** → elegir la última ejecución que estaba bien (verde, anterior al cambio) → botón **Re-run all jobs**. En 2 minutos vuelve la versión anterior sin tocar la base de datos.
+2. Alternativa desde el computador: `git revert HEAD` y `git push` (crea un cambio que deshace el último).
+
+**Cambios en la base de datos**
+- Cada cambio vive en `supabase/cambios/NN-nombre.sql` y también al final de `supabase/schema.sql`. Para aplicar uno: Supabase → SQL Editor → New query → pegar el archivo → Run. Nunca borrar tablas en producción durante la feria.
+- Revertir un cambio de base: no hay "deshacer" automático. Restaurar desde el respaldo (abajo) o pedir el SQL contrario a Claude Code. Por eso el código se congela el sábado 3 de octubre.
+
+**Respaldo (todos los días desde el 30 de septiembre y antes de cualquier cambio de base)**
+- En el computador: `npm run backup`. Crea `backups/FECHA-HORA/` con un archivo por tabla (JSON) y los usuarios de Auth. La carpeta `backups/` no se sube a GitHub. Copiarla a Google Drive.
+- Necesita el archivo `.env.backup` (ignorado por git) con `DB_URL=postgresql://postgres.ujfhvhoutlqphbpwrgfq:CONTRASEÑA@aws-0-us-east-2.pooler.supabase.com:5432/postgres` (la contraseña de la base, con los caracteres especiales codificados: `(` → `%28`).
+- Restaurar: Claude Code carga los JSON con un script; en Supabase Pro existiría restauración automática, en Free no.
+
+**Pruebas (correr después de cualquier cambio)**
+- `npm run pruebas`: 21 pruebas de reglas de negocio y seguridad + 11 de Fase 3. Necesita `.env.pruebas` (mismo contenido que `.env.backup` más `SUPABASE_URL`, `PUBLISHABLE` y `SECRET`).
+- `npm run intrusion`: 31 intentos de ataque con la clave publishable; todos deben decir BLOQUEADO.
+
+**Funciones de correo (Edge Functions)**
+- Están en `supabase/functions/*`. Publicar una: `npx supabase@latest functions deploy NOMBRE --project-ref ujfhvhoutlqphbpwrgfq --no-verify-jwt` con la variable `SUPABASE_ACCESS_TOKEN` (token de acceso personal de Supabase). Secretos: Supabase → Edge Functions → Secrets (`RESEND_API_KEY`, `RESEND_FROM`, `CRON_SECRET`, `APP_URL` opcional).
+- Programación automática (pg_cron): agenda del día siguiente el 5 y 6 de octubre a las 7 p.m., encuesta el 8 de octubre a las 9 a.m. Ver en Supabase → Integrations → Cron. Para forzar un envío: panel de organización → Reuniones → "Enviar correo de agenda" / Ajustes → "Enviar encuesta ahora".
+
+**Cuando Resend verifique el dominio (match.expohost.travel)**
+1. Supabase → Authentication → Emails → SMTP Settings → Sender email: `match@match.expohost.travel`, Sender name: Expohost Match → Save.
+2. Supabase → Edge Functions → Secrets → `RESEND_FROM` = `Expohost Match <match@match.expohost.travel>`.
+3. Enviar un correo de prueba (Entrar → tu correo) y confirmar que llega a un correo que no sea de la organización.
+
+**Si la app deja de cargar**
+- Ver github.com/ExpoHost/expohost-match/actions: si la última ejecución está en rojo, abrirla y leer el error, o re-ejecutar la anterior verde.
+- Ver status.supabase.com. Si Supabase está caído, la app muestra "Sin conexión"; no hay nada que hacer salvo esperar.
+
+**Después de la feria (seguridad)**
+- Revocar el token de acceso de Supabase (foto → Account preferences → Access Tokens → Revoke), cambiar la contraseña de la base (Project Settings → Database → Reset database password), rotar la clave secret (Project Settings → API Keys) y la clave de Resend (API Keys → eliminar `expohost-match`), y actualizar los secretos de las funciones.
+- Borrar la carpeta temporal de Claude Code del computador (contiene copias de las claves usadas durante la construcción).

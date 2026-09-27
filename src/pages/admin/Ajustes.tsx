@@ -7,6 +7,24 @@ import { mensajeError } from '../../lib/utilidades'
 type Bloque = { id: number; dia: string; inicio: string; bloqueado: boolean }
 type Tag = { id: number; nombre: string; activo: boolean; orden: number }
 
+function Encuesta() {
+  const [stats, setStats] = useState<{ respuestas: number; utiles: number; reuniones: number } | null>(null)
+  const [msg, setMsg] = useState<string | null>(null)
+  useEffect(() => { supabase.rpc('admin_encuesta').then(({ data }) => setStats(data?.[0] ?? null)) }, [])
+  async function enviar() {
+    if (!window.confirm('¿Enviar ahora la encuesta a todas las personas con reuniones confirmadas que aún no han respondido?')) return
+    const { data, error } = await supabase.functions.invoke('correo-encuesta', { body: {} })
+    setMsg(error ? mensajeError(error) : data.enviado ? `Encuesta enviada a ${data.personas} persona(s).` : `No se envió: ${data.motivo}`)
+  }
+  return (
+    <div className="space-y-2 text-sm">
+      {stats && <p>{stats.respuestas} respuestas de {stats.reuniones * 2} posibles · {stats.utiles} dijeron que fue útil{stats.respuestas ? ` (${Math.round((stats.utiles / stats.respuestas) * 100)} %)` : ''}.</p>}
+      <button className="btn-secundario text-sm" onClick={enviar}>Enviar encuesta ahora</button>
+      {msg && <Aviso tipo="info">{msg}</Aviso>}
+    </div>
+  )
+}
+
 export default function Ajustes() {
   const [mesas, setMesas] = useState('')
   const [bloques, setBloques] = useState<Bloque[]>([])
@@ -63,6 +81,12 @@ export default function Ajustes() {
             </div>
           </div>
         ))}
+      </section>
+
+      <section className="tarjeta space-y-3 p-5">
+        <h2 className="text-lg font-extrabold">Encuesta T+1</h2>
+        <p className="text-sm text-tinta-suave">El 8 de octubre a las 9 a.m. se envía sola a quienes tuvieron reuniones ("¿La reunión fue útil?"). Aquí puedes forzarla o ver resultados.</p>
+        <Encuesta />
       </section>
 
       <section className="tarjeta space-y-3 p-5">

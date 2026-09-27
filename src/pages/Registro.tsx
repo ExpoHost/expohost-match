@@ -116,6 +116,17 @@ export default function Registro({ modo }: { modo: Modo }) {
     setEnviando(false)
   }
 
+  // Lista oficial de stands: si el stand existe, rellena empresa y categoría (solo si están vacíos)
+  async function rellenarPorStand(stand: string, form: HTMLFormElement | null) {
+    if (!stand.trim() || !form) return
+    const { data } = await supabase.rpc('empresa_por_stand', { p_stand: stand })
+    const fila = data?.[0]
+    if (!fila) return
+    const empresa = form.elements.namedItem('empresa') as HTMLInputElement | null
+    if (empresa && !empresa.value.trim()) empresa.value = fila.empresa
+    if (fila.categoria && !b.categoria) set('categoria', fila.categoria)
+  }
+
   async function elegirFoto(file: File | undefined) {
     if (!file) return
     try { set('foto', await redimensionarFoto(file)) } catch (err) { setError(mensajeError(err)) }
@@ -198,7 +209,7 @@ export default function Registro({ modo }: { modo: Modo }) {
                 ))}
                 {b.solicitud === 'expositor_stand' && (
                   <label className="block"><span className="etiqueta">Número de stand <span className="text-[#B0103F]">(obligatorio)</span></span>
-                    <input className="campo" name="stand" defaultValue={b.stand} maxLength={20} placeholder="Por ejemplo A-12" />
+                    <input className="campo" name="stand" defaultValue={b.stand} maxLength={20} placeholder="Por ejemplo A-12" onBlur={(ev) => rellenarPorStand(ev.target.value, ev.target.form)} />
                     <span className="mt-1 block text-xs text-tinta-suave">Escribe el número tal como aparece en tu contrato de expositor. La organización lo usará para verificar tu participación.</span>{err('stand')}</label>
                 )}
               </div>
