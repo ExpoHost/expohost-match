@@ -183,7 +183,6 @@ export default function Registro({ modo }: { modo: Modo }) {
                     <input className="campo" name="stand" defaultValue={b.stand} maxLength={20} placeholder="Por ejemplo A-12" />
                     <span className="mt-1 block text-xs text-tinta-suave">Escribe el número tal como aparece en tu contrato de expositor. La organización lo usará para verificar tu participación.</span>{err('stand')}</label>
                 )}
-                {b.solicitud !== '' && <p className="text-xs text-tinta-suave">La organización verifica tu participación como expositor. Mientras tanto usas la app como asistente.</p>}
               </div>
             )}
           </fieldset>
