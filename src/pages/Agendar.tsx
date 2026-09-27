@@ -2,7 +2,7 @@ import { useCallback, useEffect, useState } from 'react'
 import { Link, useNavigate, useParams } from 'react-router-dom'
 import { Aviso, Avatar, Pantalla } from '../components/ui'
 import { supabase } from '../lib/supabase'
-import { descargarIcs, diaTexto, hora, horaFin, lugarTexto, type MiMatch, type Propuesta } from '../lib/reuniones'
+import { descargarIcs, diaTexto, googleCalendarUrl, hora, horaFin, lugarTexto, type MiMatch, type Propuesta } from '../lib/reuniones'
 import { avisarReunion } from '../lib/correos'
 import { mensajeError } from '../lib/utilidades'
 
@@ -10,6 +10,7 @@ import { mensajeError } from '../lib/utilidades'
 export default function Agendar() {
   const { id } = useParams()
   const [m, setM] = useState<MiMatch | null>(null)
+  const [noExiste, setNoExiste] = useState(false)
   const [propuestas, setPropuestas] = useState<Propuesta[] | null>(null)
   const [error, setError] = useState<string | null>(null)
   const [reservando, setReservando] = useState<number | null>(null)
@@ -28,6 +29,7 @@ export default function Agendar() {
     if (error) { setError(mensajeError(error)); return }
     const encontrado = (data as MiMatch[]).find((x) => x.match_id === id) ?? null
     setM(encontrado)
+    setNoExiste(!encontrado)
     if (encontrado && !encontrado.meeting_id) {
       const r = await supabase.rpc('propuestas', { p_match: id })
       if (r.error) setError(mensajeError(r.error)); else setPropuestas(r.data)
@@ -44,7 +46,13 @@ export default function Agendar() {
     cargar()
   }
 
-  if (!m) return <Pantalla nav volver="/agenda">{error ? <Aviso>{error}</Aviso> : <p className="text-tinta-suave" role="status">Cargando…</p>}</Pantalla>
+  if (!m) return (
+    <Pantalla nav volver="/agenda">
+      {error ? <Aviso>{error}</Aviso>
+        : noExiste ? <div className="space-y-4"><Aviso tipo="info">No encontramos este match. Puede que se haya deshecho.</Aviso><Link to="/agenda" className="btn-primario w-full">Ver mi agenda</Link></div>
+        : <p className="text-tinta-suave" role="status">Cargando…</p>}
+    </Pantalla>
+  )
 
   return (
     <Pantalla nav volver="/agenda">
@@ -64,7 +72,8 @@ export default function Agendar() {
           <p className="text-lg">{hora(m.inicio)} – {horaFin(m.inicio)}</p>
           <p className="mt-1 font-semibold text-azul">{lugarTexto(m)}</p>
           <p className="mt-4 text-sm text-tinta-suave">Les enviaremos un correo con los detalles a ambos. En la feria entra con tus datos móviles.</p>
-          <button className="btn-secundario mt-5 w-full" onClick={() => descargarIcs({ ...m, meeting_id: m.meeting_id!, dia: m.dia!, inicio: m.inicio! })}>Agregar a mi calendario</button>
+          <a href={googleCalendarUrl({ ...m, dia: m.dia!, inicio: m.inicio! })} target="_blank" rel="noopener noreferrer" className="btn-secundario mt-5 w-full">Agregar a Google Calendar</a>
+          <button className="btn-secundario mt-3 w-full" onClick={() => descargarIcs({ ...m, meeting_id: m.meeting_id!, dia: m.dia!, inicio: m.inicio! })}>Otro calendario (.ics)</button>
           <Link to="/agenda" className="btn-primario mt-3 w-full">Ver mi agenda</Link>
         </section>
       ) : (
@@ -75,7 +84,7 @@ export default function Agendar() {
           <div className="mt-4 space-y-3">
             {propuestas === null && <p className="text-tinta-suave" role="status">Buscando horarios…</p>}
             {propuestas?.length === 0 && (
-              <Aviso tipo="info">No encontramos un horario libre para ambos. Revisa tus franjas de disponibilidad en <Link to="/perfil/editar" className="underline">tu perfil</Link> o intenta más tarde.</Aviso>
+              <Aviso tipo="info">No encontramos un horario libre para ambos. Revisa tus franjas de disponibilidad en <Link to="/perfil/editar" className="inline-flex min-h-11 items-center font-semibold underline">tu perfil</Link> o intenta más tarde.</Aviso>
             )}
             {propuestas?.map((p) => (
               <button key={p.block_id} onClick={() => reservar(p)} disabled={reservando !== null}

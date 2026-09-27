@@ -3,7 +3,7 @@ import { Link } from 'react-router-dom'
 import { Aviso, Avatar, Pantalla } from '../components/ui'
 import { supabase } from '../lib/supabase'
 import { avisarReunion } from '../lib/correos'
-import { descargarIcs, diaTexto, hora, horaFin, lugarTexto, whatsappUrl, type MiMatch } from '../lib/reuniones'
+import { descargarIcs, diaTexto, googleCalendarUrl, hora, horaFin, lugarTexto, whatsappUrl, type MiMatch } from '../lib/reuniones'
 import { mensajeError } from '../lib/utilidades'
 
 export default function Agenda() {
@@ -68,6 +68,7 @@ export default function Agenda() {
 function Reunion({ r, onCambio }: { r: MiMatch; onCambio: () => void }) {
   const [contacto, setContacto] = useState<{ email: string; telefono: string | null } | null>(null)
   const [confirmarCancelar, setConfirmarCancelar] = useState(false)
+  const [cancelando, setCancelando] = useState(false)
   const [error, setError] = useState<string | null>(null)
 
   async function verContacto() {
@@ -76,8 +77,10 @@ function Reunion({ r, onCambio }: { r: MiMatch; onCambio: () => void }) {
   }
 
   async function cancelar() {
+    if (cancelando) return
+    setCancelando(true)
     const { error } = await supabase.rpc('cancelar_reunion', { p_meeting: r.meeting_id })
-    if (error) { setError(mensajeError(error)); return }
+    if (error) { setError(mensajeError(error)); setCancelando(false); return }
     avisarReunion(r.meeting_id!, 'cancelada')
     onCambio()
   }
@@ -107,15 +110,18 @@ function Reunion({ r, onCambio }: { r: MiMatch; onCambio: () => void }) {
       )}
 
       <div className="mt-2 grid grid-cols-2 gap-2">
-        <button className="btn-secundario px-3 text-sm" onClick={() => descargarIcs({ ...r, meeting_id: r.meeting_id!, dia: r.dia!, inicio: r.inicio! })}>Al calendario</button>
+        <a href={googleCalendarUrl({ ...r, dia: r.dia!, inicio: r.inicio! })} target="_blank" rel="noopener noreferrer" className="btn-secundario px-3 text-sm">Google Calendar</a>
+        <button className="btn-secundario px-3 text-sm" onClick={() => descargarIcs({ ...r, meeting_id: r.meeting_id!, dia: r.dia!, inicio: r.inicio! })}>Otro calendario (.ics)</button>
+      </div>
+      <div className="mt-2">
         {confirmarCancelar
-          ? <button className="btn border border-rosa bg-rosa/10 px-3 text-sm text-[#B0103F]" onClick={cancelar}>Sí, cancelar</button>
-          : <button className="btn-secundario px-3 text-sm" onClick={() => setConfirmarCancelar(true)}>Cancelar reunión</button>}
+          ? <button className="btn w-full border border-rosa bg-rosa/10 px-3 text-sm text-[#B0103F]" onClick={cancelar} disabled={cancelando}>{cancelando ? 'Cancelando…' : 'Sí, cancelar la reunión'}</button>
+          : <button className="btn-secundario w-full px-3 text-sm" onClick={() => setConfirmarCancelar(true)}>Cancelar reunión</button>}
       </div>
       {confirmarCancelar && (
-        <p className="mt-2 text-xs text-tinta-suave">
-          Se liberará el horario y le avisaremos a {r.nombre.split(' ')[0]} por correo.{' '}
-          <button className="font-semibold text-azul" onClick={() => setConfirmarCancelar(false)}>No cancelar</button>
+        <p className="mt-2 flex flex-wrap items-center gap-x-2 text-xs text-tinta-suave">
+          <span>Se liberará el horario y le avisaremos a {r.nombre.split(' ')[0]} por correo.</span>
+          <button className="inline-flex min-h-11 items-center font-semibold text-azul" onClick={() => setConfirmarCancelar(false)}>No cancelar</button>
         </p>
       )}
     </article>

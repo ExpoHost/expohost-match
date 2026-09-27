@@ -33,7 +33,7 @@ function ConSesion({ children }: { children: ReactNode }) {
         <Aviso>{error}</Aviso>
         <p className="text-sm text-tinta-suave">Revisa tu conexión e inténtalo de nuevo. Si sigue fallando, cierra sesión y vuelve a entrar con tu correo.</p>
         <button className="btn-primario w-full" onClick={() => window.location.reload()}>Reintentar</button>
-        <button className="btn-secundario w-full" onClick={() => supabase.auth.signOut()}>Cerrar sesión</button>
+        <button className="btn-secundario w-full" onClick={() => supabase.auth.signOut({ scope: 'local' })}>Cerrar sesión</button>
       </div>
     </Pantalla>
   )

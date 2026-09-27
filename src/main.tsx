@@ -13,7 +13,11 @@ async function leerRegresoDelCorreo() {
   const limpiar = (ruta: string) => history.replaceState(null, '', window.location.pathname + ruta)
   const access_token = p.get('access_token'), refresh_token = p.get('refresh_token')
   if (access_token && refresh_token) {
-    const { error } = await supabase.auth.setSession({ access_token, refresh_token })
+    // Con datos móviles lentos no se deja la pantalla en blanco: a los 10 s se sigue con la sesión guardada localmente
+    const { error } = await Promise.race([
+      supabase.auth.setSession({ access_token, refresh_token }),
+      new Promise<{ error: null }>((r) => setTimeout(() => r({ error: null }), 10_000)),
+    ])
     limpiar(error ? '#/entrar?error=enlace' : '#/')
   } else {
     limpiar('#/entrar?error=enlace')

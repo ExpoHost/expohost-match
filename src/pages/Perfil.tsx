@@ -21,7 +21,8 @@ export default function Perfil() {
             <h1 className="text-xl font-extrabold leading-tight">{perfil.nombre}</h1>
             <p className="text-sm text-tinta-suave">{[perfil.cargo, perfil.empresa?.nombre].filter(Boolean).join(' · ')}</p>
             <p className="mt-1 text-xs font-semibold text-azul">
-              {perfil.tipo === 'expositor' ? `Expositor${perfil.empresa?.stand ? ` · Stand ${perfil.empresa.stand}` : ''}` : 'Asistente'}
+              {perfil.tipo === 'expositor' && perfil.empresa?.stand ? `Expositor · Stand ${perfil.empresa.stand}`
+                : perfil.empresa?.tipo === 'expositor' ? 'Proveedor / servicio' : 'Asistente'}
               {categoria ? ` · ${categoria}` : ''}
             </p>
           </div>
@@ -47,7 +48,7 @@ export default function Perfil() {
 
       <div className="mt-6 space-y-3">
         <Link to="/perfil/editar" className="btn-primario w-full">Editar mi perfil</Link>
-        <button className="btn-secundario w-full" onClick={() => supabase.auth.signOut()}>Cerrar sesión</button>
+        <button className="btn-secundario w-full" onClick={() => supabase.auth.signOut({ scope: 'local' })}>Cerrar sesión</button>
       </div>
     </Pantalla>
   )

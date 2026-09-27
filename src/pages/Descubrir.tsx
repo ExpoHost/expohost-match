@@ -8,7 +8,7 @@ import { mensajeError, useCatalogos, useFoto } from '../lib/utilidades'
 type Tarjeta = {
   id: string; nombre: string; cargo: string | null; ciudad: string | null; bio: string | null; foto_path: string | null
   tipo: 'asistente' | 'expositor'; categoria: string | null; busca: string[]; ofrece: string[]
-  empresa: string | null; stand: string | null; score: number; razon: string
+  empresa: string | null; stand: string | null; proveedor: boolean; score: number; razon: string
 }
 
 export default function Descubrir() {
@@ -113,9 +113,12 @@ function TarjetaPerfil({ t, categoria }: { t: Tarjeta; categoria?: string }) {
         {foto
           ? <img src={foto} alt="" className="h-full w-full object-cover" draggable={false} />
           : <div className="flex h-full items-center justify-center"><Avatar nombre={t.nombre} tam="h-28 w-28 text-4xl" /></div>}
-        {t.tipo === 'expositor' && (
-          <span className="absolute left-4 top-4 rounded-full bg-naranja px-3 py-1 text-xs font-bold text-tinta">Expositor{t.stand ? ` · Stand ${t.stand}` : ''}</span>
-        )}
+        {/* Solo el expositor con stand lleva la etiqueta "Expositor"; la empresa aprobada sin stand es "Proveedor / servicio" */}
+        {t.tipo === 'expositor' && t.stand ? (
+          <span className="absolute left-4 top-4 rounded-full bg-naranja px-3 py-1 text-xs font-bold text-tinta">Expositor · Stand {t.stand}</span>
+        ) : t.proveedor ? (
+          <span className="absolute left-4 top-4 rounded-full bg-turquesa px-3 py-1 text-xs font-bold text-tinta">Proveedor / servicio</span>
+        ) : null}
       </div>
       <div className="p-5">
         <h1 className="text-2xl font-extrabold leading-tight">{t.nombre}</h1>

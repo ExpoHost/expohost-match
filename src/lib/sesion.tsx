@@ -1,5 +1,6 @@
 import { createContext, useCallback, useContext, useEffect, useState, type ReactNode } from 'react'
 import type { Session } from '@supabase/supabase-js'
+import { z } from 'zod'
 import { SESION_DIAS, supabase } from './supabase'
 import { CONSENT_TEXTO, CONSENT_VERSION, sha256 } from './catalogos'
 
@@ -51,6 +52,15 @@ export const borrarBorrador = () => { try { localStorage.removeItem(CLAVE_BORRAD
 
 export const perfilCompleto = (p: Perfil | null) => !!p && p.busca.length + p.ofrece.length > 0
 
+const esquemaBorrador = z.object({
+  nombre: z.string().max(80), empresa: z.string().max(80), cargo: z.string().max(80), ciudad: z.string().max(60),
+  telefono: z.string().max(25), categoria: z.string().max(40), solicitud: z.string().max(30), stand: z.string().max(20),
+  bio: z.string().max(280), foto: z.string().max(200_000).nullable(),
+  busca: z.array(z.string().max(60)).max(30), ofrece: z.array(z.string().max(60)).max(30), franjas: z.array(z.string().max(10)).max(4),
+  comercial: z.boolean(), email: z.string().max(120),
+})
+export const esBorrador = (x: unknown): x is Borrador => esquemaBorrador.safeParse(x).success
+
 // Guarda perfil, empresa y teléfono; con consentimiento, lo registra.
 export async function guardarPerfil(b: Borrador, conConsentimiento: boolean) {
   const { error } = await supabase.rpc('completar_registro', {
@@ -92,12 +102,14 @@ export async function subirFoto(blob: Blob) {
 }
 
 async function cargarPerfil(uid: string): Promise<Perfil | null> {
-  const [{ data: p }, { data: priv }] = await Promise.all([
+  const [{ data: p, error: e1 }, { data: priv, error: e2 }] = await Promise.all([
     supabase.from('profiles')
       .select('id, nombre, cargo, ciudad, bio, foto_path, tipo, tier, categoria, busca, ofrece, franjas, empresa:companies(nombre, tipo, stand, solicitud, stand_declarado)')
       .eq('id', uid).maybeSingle(),
     supabase.from('profiles_private').select('email, telefono').eq('user_id', uid).maybeSingle(),
   ])
+  // Un fallo de red no debe confundirse con "no tiene perfil" (mandaría a la persona a llenarlo otra vez)
+  if (e1 || e2) throw new Error('No pudimos cargar tu perfil. Revisa tu conexión.')
   if (!p) return null
   return { ...(p as unknown as Omit<Perfil, 'telefono' | 'email'>), telefono: priv?.telefono ?? null, email: priv?.email ?? '' }
 }
@@ -120,21 +132,25 @@ export function SesionProvider({ children }: { children: ReactNode }) {
   const sincronizar = useCallback(async (s: Session | null) => {
     setSession(s)
     if (!s) { setPerfil(null); setCargando(false); return }
-    // Sesión de máximo 7 días desde que la persona entró con su correo (el plan Free no lo limita)
+    // Sesión de máximo SESION_DIAS desde que la persona entró con su correo (el plan Free no lo limita).
+    // Nunca se expulsa a nadie entre el 5 y el 8 de octubre: en la feria no hay tiempo de pedir correos.
     const entro = s.user.last_sign_in_at ? Date.parse(s.user.last_sign_in_at) : Date.now()
-    if (Date.now() - entro > SESION_DIAS * 86400_000) { await supabase.auth.signOut(); return }
+    const hoy = new Date().toISOString().slice(0, 10)
+    const enFeria = hoy >= '2026-10-05' && hoy <= '2026-10-08'
+    if (!enFeria && Date.now() - entro > SESION_DIAS * 86400_000) { await supabase.auth.signOut({ scope: 'local' }); return }
     setError(null)
     try {
       // Si la persona acaba de confirmar su correo, terminar el registro que dejó guardado.
       // Primero el borrador de este navegador (trae la foto); si no hay, el guardado en el servidor
       // (el enlace del correo pudo abrirse en otro navegador). Tomarlo del servidor lo borra.
       const local = leerBorrador()
-      const mio = local && local.email.toLowerCase() === (s.user.email ?? '').toLowerCase() ? local : null
+      const mio = local && local.email?.toLowerCase() === (s.user.email ?? '').toLowerCase() ? local : null
       const { data: remoto } = await supabase.rpc('tomar_registro_pendiente')
-      const b = mio ?? (remoto as Borrador | null)
+      // El pendiente del servidor se valida antes de aplicarlo (lo pudo escribir cualquiera con el correo)
+      const b = mio ?? (esBorrador(remoto) ? remoto : null)
       if (b) {
         borrarBorrador() // antes de guardar, para no guardarlo dos veces si esto corre en paralelo
-        try { await guardarPerfil(b, true) } catch (e) { guardarBorrador(b); throw e }
+        try { await guardarPerfil(b, true) } catch (e) { if (mio) guardarBorrador(b); throw e }
       }
       setPerfil(await cargarPerfil(s.user.id))
     } catch (e) {
@@ -158,7 +174,8 @@ export function SesionProvider({ children }: { children: ReactNode }) {
   }, [sincronizar])
 
   const recargar = useCallback(async () => {
-    if (session) setPerfil(await cargarPerfil(session.user.id))
+    if (!session) return
+    try { setPerfil(await cargarPerfil(session.user.id)) } catch { /* se conserva el perfil que ya teníamos */ }
   }, [session])
 
   return <SesionCtx.Provider value={{ session, perfil, cargando, error, recargar }}>{children}</SesionCtx.Provider>

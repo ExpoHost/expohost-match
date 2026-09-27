@@ -18,4 +18,4 @@ if (import.meta.env.DEV) (window as unknown as { supabase: typeof supabase }).su
 // Adonde vuelve la persona después de tocar el botón del correo (debe estar en Redirect URLs)
 export const urlRegreso = () => window.location.origin + window.location.pathname
 
-export const SESION_DIAS = 7
+export const SESION_DIAS = 14

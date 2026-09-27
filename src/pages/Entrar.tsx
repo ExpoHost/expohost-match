@@ -42,7 +42,7 @@ export default function Entrar() {
           <input className="campo" type="email" inputMode="email" autoComplete="email" value={email} onChange={(e) => setEmail(e.target.value)} autoFocus /></label>
         {error && <Aviso>{error}</Aviso>}
         <button className="btn-primario w-full" disabled={enviando}>{enviando ? 'Enviando…' : 'Enviar código'}</button>
-        <p className="text-center text-sm text-tinta-suave">¿Aún no tienes perfil? <Link to="/registro" className="font-semibold text-azul">Créalo aquí</Link></p>
+        <p className="text-center text-sm text-tinta-suave">¿Aún no tienes perfil? <Link to="/registro" className="inline-flex min-h-11 items-center px-2 font-semibold text-azul">Créalo aquí</Link></p>
       </form>
     </Pantalla>
   )

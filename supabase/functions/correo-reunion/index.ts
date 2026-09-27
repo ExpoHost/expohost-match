@@ -81,13 +81,16 @@ Deno.serve(async (req) => {
 
   const admin = createClient(url, Deno.env.get('SUPABASE_SERVICE_ROLE_KEY')!)
   const { data: mt } = await admin.from('meetings')
-    .select('id, estado, lugar, mesa, stand, cancelada_por, match:matches(user_a, user_b), block:blocks(dia, inicio)')
+    .select('id, estado, lugar, mesa, stand, cancelada_por, correo_confirmacion_at, correo_cancelacion_at, match:matches(user_a, user_b), block:blocks(dia, inicio)')
     .eq('id', meeting_id).maybeSingle()
   const match = mt?.match as unknown as { user_a: string; user_b: string } | null
   const block = mt?.block as unknown as { dia: string; inicio: string } | null
   if (!mt || !match || !block) return json({ error: 'reunión no encontrada' }, 404)
   if (user.id !== match.user_a && user.id !== match.user_b) return json({ error: 'no autorizado' }, 403)
   if (mt.estado !== tipo) return json({ error: 'el estado de la reunión no coincide' }, 409)
+  // Un solo correo por reunión y por tipo (evita reenvíos repetidos y gasto del cupo de Resend)
+  const columna = tipo === 'confirmada' ? 'correo_confirmacion_at' : 'correo_cancelacion_at'
+  if ((mt as Record<string, unknown>)[columna]) return json({ enviado: false, motivo: 'ya se envió' })
 
   const ids = [match.user_a, match.user_b]
   const [{ data: perfiles }, { data: privados }] = await Promise.all([
@@ -106,6 +109,7 @@ Deno.serve(async (req) => {
   if (!key) return json({ enviado: false, motivo: 'RESEND_API_KEY no configurada todavía' })
 
   const cuando = `${DIAS[reunion.dia] ?? reunion.dia}, ${hora(reunion.inicio)} – ${horaFin(reunion.inicio)}`
+  const lugar = esc(lugarTexto(reunion))  // el stand es texto libre del registro
   const resultados = []
   for (const yo of personas) {
     const otro = personas.find((p) => p.id !== yo.id)!
@@ -116,14 +120,14 @@ Deno.serve(async (req) => {
           subject: `Reunión confirmada · ${cuando} · ${lugarTexto(reunion)}`,
           html: html('Tu reunión quedó confirmada', [
             `Tienes una reunión con ${quien} en ExpoHost Bogotá 2026.`,
-          ], { texto: 'Ver mi agenda', url: `${APP_URL}/#/agenda` }, [cuando, lugarTexto(reunion), 'Gimnasio Moderno, Bogotá']),
+          ], { texto: 'Ver mi agenda', url: `${APP_URL}/#/agenda` }, [cuando, lugar, 'Gimnasio Moderno, Bogotá']),
           attachments: [{ filename: 'reunion-expohost.ics', content: btoa(unescape(encodeURIComponent(ics(reunion, otro)))) }],
           texto: `Reunión confirmada con ${otro.nombre}: ${cuando}, ${lugarTexto(reunion)}. Agenda: ${APP_URL}/#/agenda`,
         }
       : {
           subject: `Reunión cancelada · ${cuando}`,
           html: html('Tu reunión fue cancelada', [
-            `${mt.cancelada_por === yo.id ? 'Cancelaste' : `${quien} canceló`} la reunión del ${cuando} en ${lugarTexto(reunion)}. El horario quedó libre.`,
+            `${mt.cancelada_por === yo.id ? 'Cancelaste' : `${quien} canceló`} la reunión del ${cuando} en ${lugar}. El horario quedó libre.`,
             'Si quieren verse, pueden elegir otro horario desde la app.',
           ], { texto: 'Elegir otro horario', url: `${APP_URL}/#/agenda` }),
           attachments: [],
@@ -136,5 +140,6 @@ Deno.serve(async (req) => {
     })
     resultados.push({ para: yo.id, ok: r.ok, estado: r.status })
   }
+  if (resultados.some((r) => r.ok)) await admin.from('meetings').update({ [columna]: new Date().toISOString() }).eq('id', mt.id)
   return json({ enviado: true, resultados })
 })

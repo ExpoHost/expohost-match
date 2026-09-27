@@ -16,11 +16,11 @@ export const PARTICIPACION = [
 
 // Códigos de país para el celular (Colombia primero, el resto en orden alfabético)
 export const PAISES = [
-  ['Colombia', '57'], ['Argentina', '54'], ['Bolivia', '591'], ['Brasil', '55'], ['Canadá', '1'], ['Chile', '56'],
-  ['Costa Rica', '506'], ['Ecuador', '593'], ['El Salvador', '503'], ['España', '34'], ['Estados Unidos', '1'],
+  ['Colombia', '57'], ['Argentina', '54'], ['Bolivia', '591'], ['Brasil', '55'], ['Chile', '56'],
+  ['Costa Rica', '506'], ['Ecuador', '593'], ['El Salvador', '503'], ['España', '34'],
+  ['EE. UU. / Canadá / Puerto Rico / Rep. Dominicana', '1'],
   ['Guatemala', '502'], ['Honduras', '504'], ['México', '52'], ['Nicaragua', '505'], ['Panamá', '507'],
-  ['Paraguay', '595'], ['Perú', '51'], ['Portugal', '351'], ['Puerto Rico', '1'], ['República Dominicana', '1'],
-  ['Uruguay', '598'], ['Venezuela', '58'],
+  ['Paraguay', '595'], ['Perú', '51'], ['Portugal', '351'], ['Uruguay', '598'], ['Venezuela', '58'],
 ] as const
 
 // "+57 3001234567" → { pais: 'Colombia', numero: '3001234567' }

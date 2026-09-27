@@ -17,7 +17,7 @@ export default function Landing() {
       <div className="space-y-4">
         <Link to="/registro" className="btn-primario w-full text-lg">Crear mi perfil</Link>
         <p className="text-center text-sm text-tinta-suave">
-          ¿Ya tienes perfil? <Link to="/entrar" className="font-semibold text-azul underline-offset-2 hover:underline">Entrar</Link>
+          ¿Ya tienes perfil? <Link to="/entrar" className="inline-flex min-h-11 items-center px-2 font-semibold text-azul underline-offset-2 hover:underline">Entrar</Link>
         </p>
         <p className="rounded-2xl bg-white px-4 py-3 text-center text-sm text-tinta-suave">
           En la feria entra con tus datos móviles.

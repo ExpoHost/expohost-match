@@ -44,6 +44,22 @@ export function descargarIcs(r: { meeting_id: string; dia: string; inicio: strin
   setTimeout(() => URL.revokeObjectURL(a.href), 1000)
 }
 
+// Google Calendar abre en cualquier navegador (el .ics no siempre funciona en iPhone ni dentro de apps)
+export function googleCalendarUrl(r: { dia: string; inicio: string; nombre: string; empresa: string | null } & Parameters<typeof lugarTexto>[0]) {
+  const utc = (t: string) => {
+    const [h, m] = t.split(':').map(Number)
+    return `${r.dia.replaceAll('-', '')}T${String(h! + 5).padStart(2, '0')}${String(m).padStart(2, '0')}00Z`
+  }
+  const p = new URLSearchParams({
+    action: 'TEMPLATE',
+    text: `Reunión con ${r.nombre}${r.empresa ? ` (${r.empresa})` : ''} · Expohost Match`,
+    dates: `${utc(r.inicio)}/${utc(horaFin(r.inicio))}`,
+    location: `${lugarTexto(r)} · ExpoHost Bogotá 2026 · Gimnasio Moderno`,
+    details: 'Reunión agendada en Expohost Match. En la feria entra con tus datos móviles.',
+  })
+  return `https://calendar.google.com/calendar/render?${p}`
+}
+
 // Enlace wa.me: número solo con dígitos; celulares colombianos de 10 dígitos llevan 57
 export function whatsappUrl(telefono: string, nombre: string) {
   let n = telefono.replace(/\D/g, '')

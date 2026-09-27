@@ -1,5 +1,5 @@
 import { useState, type FormEvent } from 'react'
-import { Link, useNavigate } from 'react-router-dom'
+import { Link, useNavigate, useSearchParams } from 'react-router-dom'
 import { z } from 'zod'
 import { Aviso, Avatar, Chip, Pantalla } from '../components/ui'
 import { Codigo } from '../components/Codigo'
@@ -42,7 +42,8 @@ export default function Registro({ modo }: { modo: Modo }) {
   const navigate = useNavigate()
   const { tags, categorias } = useCatalogos()
   const [b, setB] = useState<Borrador>(() => (perfil ? desdePerfil(perfil) : modo === 'nuevo' ? leerBorrador() ?? vacio : vacio))
-  const [paso, setPaso] = useState(1)
+  const [params, setParams] = useSearchParams()
+  const paso = Math.min(3, Math.max(1, Number(params.get('paso')) || 1))
   const [acepta, setAcepta] = useState(modo === 'editar')
   const [errores, setErrores] = useState<Record<string, string>>({})
   const [error, setError] = useState<string | null>(null)
@@ -53,7 +54,14 @@ export default function Registro({ modo }: { modo: Modo }) {
   const set = <K extends keyof Borrador>(k: K, v: Borrador[K]) => setB((x) => ({ ...x, [k]: v }))
   const alternar = (k: 'busca' | 'ofrece' | 'franjas', v: string) =>
     setB((x) => ({ ...x, [k]: x[k].includes(v) ? x[k].filter((y) => y !== v) : [...x[k], v] }))
-  const irA = (n: number) => { setError(null); setPaso(n); window.scrollTo(0, 0) }
+  // Cambiar de paso guarda el borrador (por si se recarga o el navegador descarta la página) y deja
+  // una entrada en el historial, para que "atrás" del celular vuelva al paso anterior y no a la landing.
+  const irA = (n: number, datos: Borrador = b) => {
+    if (modo === 'nuevo') guardarBorrador(datos)
+    setError(null)
+    setParams({ paso: String(n) })
+    window.scrollTo(0, 0)
+  }
 
   // Lee los valores directamente del formulario: el autocompletado del navegador o de un
   // gestor de contraseñas puede llenar campos sin avisarle a React.
@@ -75,8 +83,10 @@ export default function Registro({ modo }: { modo: Modo }) {
     if (!acepta) errs.acepta = 'Para continuar debes autorizar el tratamiento de tus datos'
     setErrores(errs)
     if (Object.keys(errs).length) { setError('Revisa los campos marcados.'); return }
-    if (r.success) setB((x) => ({ ...x, ...r.data, email: x.email.trim().toLowerCase() }))
-    irA(2)
+    if (!r.success) return
+    const limpio: Borrador = { ...datos, ...r.data, email: datos.email.trim().toLowerCase() }
+    setB(limpio)
+    irA(2, limpio)
   }
 
   async function enviarCodigo(email = b.email) {
@@ -220,7 +230,7 @@ export default function Registro({ modo }: { modo: Modo }) {
 
           {error && <Aviso>{error}</Aviso>}
           <button className="btn-primario w-full">Continuar</button>
-          {modo === 'nuevo' && <p className="text-center text-sm text-tinta-suave">¿Ya tienes perfil? <Link to="/entrar" className="font-semibold text-azul">Entrar</Link></p>}
+          {modo === 'nuevo' && <p className="text-center text-sm text-tinta-suave">¿Ya tienes perfil? <Link to="/entrar" className="inline-flex min-h-11 items-center px-2 font-semibold text-azul">Entrar</Link></p>}
         </form>
       )}
 
