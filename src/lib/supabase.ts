@@ -12,6 +12,9 @@ export const supabase = createClient(url, key, {
   auth: { flowType: 'implicit', persistSession: true, autoRefreshToken: true, detectSessionInUrl: false },
 })
 
+// Solo en desarrollo local, para pruebas desde la consola del navegador
+if (import.meta.env.DEV) (window as unknown as { supabase: typeof supabase }).supabase = supabase
+
 // Adonde vuelve la persona después de tocar el botón del correo (debe estar en Redirect URLs)
 export const urlRegreso = () => window.location.origin + window.location.pathname
 

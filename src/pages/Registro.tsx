@@ -87,7 +87,7 @@ export default function Registro({ modo }: { modo: Modo }) {
       } else {
         await guardarPerfil(b, modo === 'completar')
         await recargar()
-        navigate('/perfil', { replace: true })
+        navigate(modo === 'editar' ? '/perfil' : '/descubrir', { replace: true })
       }
     } catch (err) { setError(mensajeError(err)) }
     setEnviando(false)

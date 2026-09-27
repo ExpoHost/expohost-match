@@ -13,7 +13,7 @@ export default function Perfil() {
   const solicitudPendiente = perfil.tipo === 'asistente' && perfil.empresa?.solicitud
 
   return (
-    <Pantalla>
+    <Pantalla nav>
       <article className="tarjeta p-5">
         <div className="flex items-center gap-4">
           <Avatar path={perfil.foto_path} nombre={perfil.nombre} tam="h-20 w-20 text-2xl" />

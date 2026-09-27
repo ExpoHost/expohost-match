@@ -49,7 +49,7 @@ export function useFoto(path: string | null | undefined) {
 }
 
 export const iniciales = (nombre: string) =>
-  nombre.split(/\s+/).filter(Boolean).slice(0, 2).map((p) => p[0]!.toUpperCase()).join('')
+  nombre.split(/\s+/).filter((p) => /^\p{L}/u.test(p)).slice(0, 2).map((p) => p[0]!.toUpperCase()).join('') || '?'
 
 // Traduce errores técnicos a mensajes para la persona
 export function mensajeError(e: unknown): string {

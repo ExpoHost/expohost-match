@@ -115,8 +115,8 @@ Al cerrar cada fase: resumen de lo hecho, lo pendiente y las decisiones que nece
 
 - [x] Fase 0 (sáb 26: schema aplicado y 21 pruebas pasando; workflow de Pages listo)
 - [x] Fase 1 (sáb 26: landing, registro en 3 pasos con consentimiento, acceso por código o botón, perfil y edición; probado en navegador)
-- [ ] Fase 2
-- [ ] Prueba interna sábado 26
+- [x] Fase 2 (sáb 26: Descubrir con ♥/✕/deshacer y deslizar, match, 3 horarios, Mi agenda con contacto, WhatsApp, .ics y cancelar; Edge Function `correo-reunion` publicada, envía cuando exista RESEND_API_KEY)
+- [ ] Prueba interna sábado 26 (Lina sola con management@expohost.travel; los demás cuando esté Resend)
 - [ ] Fase 3
 - [ ] Fase 4
 - [ ] Fase 5
@@ -134,6 +134,9 @@ Al cerrar cada fase: resumen de lo hecho, lo pendiente y las decisiones que nece
 - Mientras no esté Resend, el correo de Supabase solo llega a miembros de la organización y máximo 2 por hora: la prueba del 26 la hace Lina sola con management@expohost.travel, con perfiles de demostración para poder hacer match.
 - La publishable key y la URL de Supabase están directamente en `src/lib/supabase.ts` (son públicas); el workflow no necesita variables.
 - Pruebas de la base: `node --env-file=.env.pruebas supabase/pruebas.cjs` (ver cabecera del archivo).
+- Fase 2 (26-sep): RPC `mis_matches()` (matches y reunión activa de la persona, sin contacto) en `supabase/cambios/02-fase2-mis-matches.sql`. Correos de reunión: Edge Function `supabase/functions/correo-reunion` (verifica sesión y participación; con `RESEND_API_KEY` envía confirmación con .ics o cancelación a ambos; sin la key responde `enviado:false`). Se publica con `npx supabase@latest functions deploy correo-reunion --project-ref ujfhvhoutlqphbpwrgfq --no-verify-jwt` (variable `SUPABASE_ACCESS_TOKEN`). Secretos de la función: `RESEND_API_KEY`, opcional `RESEND_FROM` y `APP_URL`.
+- Perfiles de demostración (26-sep, solo para la prueba): 4 usuarios `demo-1..4@example.com` (3 expositores/PM que dan ♥ automático a cada persona real que completa su registro, mediante el trigger temporal `demo_likes`, y 1 inversionista que no). **Borrarlos antes de cargar expositores reales (30-sep)** con el script `demo.js borrar` de Claude Code (o borrar los usuarios en Authentication → Users y ejecutar `drop trigger demo_likes on profiles; drop function demo_likes();`).
+- Pendiente de aprobación de Lina: aplicar las plantillas de correo (script `plantillas.js` de Claude Code, usa la Management API).
 
 ## Cuentas y dónde viven las claves
 

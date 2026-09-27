@@ -1,0 +1,87 @@
+import { useCallback, useEffect, useState } from 'react'
+import { Link, useParams } from 'react-router-dom'
+import { Aviso, Avatar, Pantalla } from '../components/ui'
+import { supabase } from '../lib/supabase'
+import { descargarIcs, diaTexto, hora, horaFin, lugarTexto, type MiMatch, type Propuesta } from '../lib/reuniones'
+import { avisarReunion } from '../lib/correos'
+import { mensajeError } from '../lib/utilidades'
+
+// Después del match: 3 horarios donde ambos están libres y hay lugar. Un toque confirma.
+export default function Agendar() {
+  const { id } = useParams()
+  const [m, setM] = useState<MiMatch | null>(null)
+  const [propuestas, setPropuestas] = useState<Propuesta[] | null>(null)
+  const [error, setError] = useState<string | null>(null)
+  const [reservando, setReservando] = useState<number | null>(null)
+
+  const cargar = useCallback(async () => {
+    const { data, error } = await supabase.rpc('mis_matches')
+    if (error) { setError(mensajeError(error)); return }
+    const encontrado = (data as MiMatch[]).find((x) => x.match_id === id) ?? null
+    setM(encontrado)
+    if (encontrado && !encontrado.meeting_id) {
+      const r = await supabase.rpc('propuestas', { p_match: id })
+      if (r.error) setError(mensajeError(r.error)); else setPropuestas(r.data)
+    }
+  }, [id])
+  useEffect(() => { cargar() }, [cargar])
+
+  async function reservar(p: Propuesta) {
+    setReservando(p.block_id); setError(null)
+    const { data, error } = await supabase.rpc('reservar_reunion', { p_match: id, p_block: p.block_id })
+    setReservando(null)
+    if (error) { setError(mensajeError(error)); setPropuestas(null); cargar(); return } // el horario se ocupó: nuevas propuestas
+    avisarReunion(data, 'confirmada')
+    cargar()
+  }
+
+  if (!m) return <Pantalla nav volver="/agenda">{error ? <Aviso>{error}</Aviso> : <p className="text-tinta-suave" role="status">Cargando…</p>}</Pantalla>
+
+  return (
+    <Pantalla nav volver="/agenda">
+      <div className="flex items-center gap-4">
+        <Avatar path={m.foto_path} nombre={m.nombre} />
+        <div>
+          <p className="text-sm font-semibold text-rosa">Match</p>
+          <h1 className="text-xl font-extrabold leading-tight">{m.nombre}</h1>
+          <p className="text-sm text-tinta-suave">{[m.cargo, m.empresa].filter(Boolean).join(' · ')}</p>
+        </div>
+      </div>
+
+      {m.meeting_id && m.dia && m.inicio ? (
+        <section className="tarjeta mt-6 p-6">
+          <p className="text-sm font-semibold text-[#006B6B]">Reunión confirmada</p>
+          <p className="mt-2 text-xl font-extrabold">{diaTexto(m.dia)}</p>
+          <p className="text-lg">{hora(m.inicio)} – {horaFin(m.inicio)}</p>
+          <p className="mt-1 font-semibold text-azul">{lugarTexto(m)}</p>
+          <p className="mt-4 text-sm text-tinta-suave">Les enviaremos un correo con los detalles a ambos. En la feria entra con tus datos móviles.</p>
+          <button className="btn-secundario mt-5 w-full" onClick={() => descargarIcs({ ...m, meeting_id: m.meeting_id!, dia: m.dia!, inicio: m.inicio! })}>Agregar a mi calendario</button>
+          <Link to="/agenda" className="btn-primario mt-3 w-full">Ver mi agenda</Link>
+        </section>
+      ) : (
+        <section className="mt-6">
+          <h2 className="text-lg font-extrabold">Elige un horario</h2>
+          <p className="mt-1 text-sm text-tinta-suave">Estos son los primeros horarios en que ambos están libres. Un toque y queda confirmado.</p>
+          {error && <div className="mt-4"><Aviso>{error}</Aviso></div>}
+          <div className="mt-4 space-y-3">
+            {propuestas === null && <p className="text-tinta-suave" role="status">Buscando horarios…</p>}
+            {propuestas?.length === 0 && (
+              <Aviso tipo="info">No encontramos un horario libre para ambos. Revisa tus franjas de disponibilidad en <Link to="/perfil/editar" className="underline">tu perfil</Link> o intenta más tarde.</Aviso>
+            )}
+            {propuestas?.map((p) => (
+              <button key={p.block_id} onClick={() => reservar(p)} disabled={reservando !== null}
+                className="tarjeta flex w-full items-center justify-between gap-4 p-5 text-left transition hover:ring-2 hover:ring-azul/30 disabled:opacity-60">
+                <span>
+                  <span className="block font-extrabold">{diaTexto(p.dia)}</span>
+                  <span className="block">{hora(p.inicio)} – {horaFin(p.inicio)}</span>
+                  <span className="block text-sm font-semibold text-azul">{lugarTexto(p)}</span>
+                </span>
+                <span className="shrink-0 rounded-full bg-azul px-4 py-2 text-sm font-bold text-white">{reservando === p.block_id ? '…' : 'Confirmar'}</span>
+              </button>
+            ))}
+          </div>
+        </section>
+      )}
+    </Pantalla>
+  )
+}

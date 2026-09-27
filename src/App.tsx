@@ -6,8 +6,11 @@ import Landing from './pages/Landing'
 import Registro from './pages/Registro'
 import Entrar from './pages/Entrar'
 import Perfil from './pages/Perfil'
+import Descubrir from './pages/Descubrir'
+import Agenda from './pages/Agenda'
+import Agendar from './pages/Agendar'
 
-const INICIO = '/perfil'
+const INICIO = '/descubrir'
 
 // Pantallas sin sesión: si ya hay sesión, ir al inicio
 function SoloVisitante({ children }: { children: ReactNode }) {
@@ -38,6 +41,9 @@ export default function App() {
           <Route path="/registro" element={<SoloVisitante><Registro modo="nuevo" /></SoloVisitante>} />
           <Route path="/entrar" element={<SoloVisitante><Entrar /></SoloVisitante>} />
           <Route path="/completar" element={<ConSesion><Registro modo="completar" /></ConSesion>} />
+          <Route path="/descubrir" element={<ConSesion><Descubrir /></ConSesion>} />
+          <Route path="/agenda" element={<ConSesion><Agenda /></ConSesion>} />
+          <Route path="/match/:id" element={<ConSesion><Agendar /></ConSesion>} />
           <Route path="/perfil" element={<ConSesion><Perfil /></ConSesion>} />
           <Route path="/perfil/editar" element={<ConSesion><Registro modo="editar" /></ConSesion>} />
           <Route path="*" element={<Navigate to="/" replace />} />

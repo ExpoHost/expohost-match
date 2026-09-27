@@ -1,17 +1,21 @@
 import type { ReactNode } from 'react'
 import { Link } from 'react-router-dom'
 import { Logo } from './Logo'
+import { Navegacion } from './Navegacion'
 import { iniciales, useFoto } from '../lib/utilidades'
 
-export function Pantalla({ children, volver, ancho = 'max-w-md' }: { children: ReactNode; volver?: string; ancho?: string }) {
+export function Pantalla({ children, volver, nav = false, ancho = 'max-w-md' }: { children: ReactNode; volver?: string; nav?: boolean; ancho?: string }) {
   return (
-    <main className={`mx-auto min-h-dvh ${ancho} px-5 pb-28 pt-5`}>
-      <header className="mb-6 flex min-h-11 items-center justify-between">
-        <Link to="/" aria-label="Inicio"><Logo /></Link>
-        {volver && <Link to={volver} className="text-sm font-semibold text-azul">Volver</Link>}
-      </header>
-      {children}
-    </main>
+    <>
+      <main className={`mx-auto min-h-dvh ${ancho} px-5 pb-28 pt-5`}>
+        <header className="mb-6 flex min-h-11 items-center justify-between">
+          <Link to="/" aria-label="Inicio"><Logo /></Link>
+          {volver && <Link to={volver} className="flex min-h-11 items-center text-sm font-semibold text-azul">Volver</Link>}
+        </header>
+        {children}
+      </main>
+      {nav && <Navegacion />}
+    </>
   )
 }
 
