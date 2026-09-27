@@ -3,6 +3,21 @@ import { supabase } from '../lib/supabase'
 import { mensajeError } from '../lib/utilidades'
 import { Aviso } from './ui'
 
+// Cerrar sesión con aviso: sin contraseñas, volver a entrar exige un código nuevo
+export function CerrarSesion() {
+  const [confirmar, setConfirmar] = useState(false)
+  if (!confirmar) return <button className="mt-2 min-h-11 text-sm font-semibold text-tinta-suave" onClick={() => setConfirmar(true)}>Cerrar sesión en este celular</button>
+  return (
+    <div className="mt-2 space-y-3 rounded-2xl bg-white p-4">
+      <p className="text-sm text-tinta-suave">Para volver a entrar tendrás que pedir un código nuevo a tu correo. ¿Seguro?</p>
+      <div className="flex gap-3">
+        <button className="btn-secundario flex-1" onClick={() => setConfirmar(false)}>No, seguir aquí</button>
+        <button className="btn-primario flex-1" onClick={() => supabase.auth.signOut({ scope: 'local' })}>Sí, cerrar sesión</button>
+      </div>
+    </div>
+  )
+}
+
 // Ley 1581: la persona puede suprimir sus datos. La RPC cancela reuniones, borra matches y anonimiza.
 export function EliminarCuenta() {
   const [paso, setPaso] = useState<0 | 1>(0)

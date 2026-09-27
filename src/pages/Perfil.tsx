@@ -1,11 +1,10 @@
 import { Link } from 'react-router-dom'
 import { Aviso, Avatar, Etiquetas, Pantalla } from '../components/ui'
-import { supabase } from '../lib/supabase'
 import { FRANJAS } from '../lib/catalogos'
 import { useSesion } from '../lib/sesion'
 import { useCatalogos } from '../lib/utilidades'
 import { Representantes } from '../components/Representantes'
-import { EliminarCuenta } from '../components/EliminarCuenta'
+import { CerrarSesion, EliminarCuenta } from '../components/EliminarCuenta'
 
 export default function Perfil() {
   const { perfil, session } = useSesion()
@@ -53,8 +52,9 @@ export default function Perfil() {
       <div className="mt-6 space-y-3">
         {session?.user.app_metadata?.role === 'admin' && <Link to="/admin" className="btn w-full bg-tinta text-white">Panel de organización</Link>}
         <Link to="/perfil/editar" className="btn-primario w-full">Editar mi perfil</Link>
-        <button className="btn-secundario w-full" onClick={() => supabase.auth.signOut({ scope: 'local' })}>Cerrar sesión</button>
       </div>
+      <p className="mt-4 text-sm text-tinta-suave">No necesitas cerrar sesión: la app te recuerda en este celular durante la feria. Solo ciérrala si el celular no es tuyo.</p>
+      <CerrarSesion />
       <p className="mt-6 rounded-2xl bg-white px-4 py-3 text-sm text-tinta-suave">¿Necesitas ayuda? Escríbenos a <span className="font-semibold text-tinta">management@expohost.travel</span> o busca el match desk en la feria.</p>
       <EliminarCuenta />
       <p className="mt-6 text-center text-xs text-tinta-suave"><Link to="/privacidad" className="inline-flex min-h-11 items-center underline">Privacidad y datos personales</Link></p>

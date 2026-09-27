@@ -105,6 +105,7 @@ export default function Registro({ modo }: { modo: Modo }) {
         const { error } = await supabase.rpc('guardar_registro_pendiente', { p_email: b.email, p_datos: b })
         if (error) throw error
         guardarBorrador(b)
+        try { localStorage.setItem('expohost-ultimo-correo', b.email) } catch { /* sin almacenamiento */ }
         await enviarCodigo()
         setCodigoEnviado(true)
       } else {

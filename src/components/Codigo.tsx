@@ -28,10 +28,10 @@ export function Codigo({ email, onReenviar, onCambiarCorreo }: { email: string; 
     <form onSubmit={verificar} className="space-y-5">
       <div>
         <h1 className="text-2xl font-extrabold">Revisa tu correo</h1>
-        <p className="mt-2 text-tinta-suave">Enviamos un correo a <strong className="text-tinta">{email}</strong>. Toca el enlace del correo para entrar. Si el correo trae un código, también puedes escribirlo aquí.</p>
+        <p className="mt-2 text-tinta-suave">Enviamos un código de 6 dígitos a <strong className="text-tinta">{email}</strong>. Escríbelo aquí abajo y toca Entrar. (El correo también trae un botón, pero escribir el código es lo más fácil.)</p>
       </div>
       <label className="block">
-        <span className="etiqueta">Código (si lo recibiste)</span>
+        <span className="etiqueta">Código de 6 dígitos</span>
         <input className="campo text-center text-2xl font-bold tracking-[0.4em]" inputMode="numeric" autoComplete="one-time-code"
           maxLength={8} value={codigo} onChange={(e) => setCodigo(e.target.value.replace(/\D/g, ''))} autoFocus />
       </label>

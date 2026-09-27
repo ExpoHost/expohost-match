@@ -9,7 +9,8 @@ import { mensajeError } from '../lib/utilidades'
 const esquema = z.string().trim().toLowerCase().email('Escribe un correo válido')
 
 export default function Entrar() {
-  const [email, setEmail] = useState('')
+  // Recuerda el último correo usado en este navegador para que volver a entrar sea un toque
+  const [email, setEmail] = useState(() => { try { return localStorage.getItem('expohost-ultimo-correo') ?? '' } catch { return '' } })
   const [enviado, setEnviado] = useState(false)
   const [params] = useSearchParams()
   const [error, setError] = useState<string | null>(params.get('error') === 'enlace' ? 'El enlace del correo ya se usó o venció. Pide un código nuevo.' : null)
@@ -25,7 +26,10 @@ export default function Entrar() {
     const r = esquema.safeParse(email)
     if (!r.success) { setError(r.error.issues[0]!.message); return }
     setEnviando(true); setError(null)
-    try { await enviar(r.data); setEmail(r.data); setEnviado(true) } catch (err) { setError(mensajeError(err)) }
+    try {
+      await enviar(r.data); setEmail(r.data); setEnviado(true)
+      try { localStorage.setItem('expohost-ultimo-correo', r.data) } catch { /* sin almacenamiento */ }
+    } catch (err) { setError(mensajeError(err)) }
     setEnviando(false)
   }
 
