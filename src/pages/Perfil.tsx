@@ -4,6 +4,7 @@ import { supabase } from '../lib/supabase'
 import { FRANJAS } from '../lib/catalogos'
 import { useSesion } from '../lib/sesion'
 import { useCatalogos } from '../lib/utilidades'
+import { Representantes } from '../components/Representantes'
 
 export default function Perfil() {
   const { perfil, session } = useSesion()
@@ -39,6 +40,8 @@ export default function Perfil() {
       {solicitudPendiente && (
         <div className="mt-4"><Aviso tipo="info">La organización está verificando tu participación como expositor{perfil.empresa?.stand_declarado ? ` (stand ${perfil.empresa.stand_declarado})` : ''}. Mientras tanto usas la app como asistente.</Aviso></div>
       )}
+
+      <Representantes />
 
       <section className="tarjeta mt-4 space-y-1 p-5 text-sm">
         <h2 className="mb-2 text-xs font-bold uppercase tracking-wider text-tinta-suave">Solo lo ven tus matches</h2>

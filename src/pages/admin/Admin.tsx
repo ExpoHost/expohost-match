@@ -8,11 +8,13 @@ import Solicitudes from './Solicitudes'
 import Participantes from './Participantes'
 import Reuniones from './Reuniones'
 import Ajustes from './Ajustes'
+import Expositores from './Expositores'
 
 const TABS = [
   { to: 'solicitudes', texto: 'Solicitudes' },
   { to: 'participantes', texto: 'Participantes' },
   { to: 'reuniones', texto: 'Reuniones' },
+  { to: 'expositores', texto: 'Cargar expositores' },
   { to: 'ajustes', texto: 'Ajustes' },
 ]
 
@@ -46,6 +48,7 @@ export default function Admin() {
           <Route path="solicitudes" element={<Solicitudes participantes={participantes} recargar={recargar} />} />
           <Route path="participantes" element={<Participantes participantes={participantes} recargar={recargar} />} />
           <Route path="reuniones" element={<Reuniones />} />
+          <Route path="expositores" element={<Expositores participantes={participantes} recargar={recargar} />} />
           <Route path="ajustes" element={<Ajustes />} />
         </Routes>
       </div>

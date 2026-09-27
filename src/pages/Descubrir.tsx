@@ -124,7 +124,7 @@ function TarjetaPerfil({ t, categoria }: { t: Tarjeta; categoria?: string }) {
         <h1 className="text-2xl font-extrabold leading-tight">{t.nombre}</h1>
         <p className="mt-1 text-sm text-tinta-suave">{[t.cargo, t.empresa].filter(Boolean).join(' · ')}</p>
         <p className="mt-1 text-xs font-semibold text-tinta-suave">{[categoria, t.ciudad].filter(Boolean).join(' · ')}</p>
-        <p className="mt-3 inline-block rounded-full bg-turquesa/15 px-3 py-1 text-xs font-bold text-[#006B6B]">{t.razon}</p>
+        <p className={`mt-3 inline-block rounded-full px-3 py-1 text-xs font-bold ${/^Sin |^Coinciden/.test(t.razon) ? 'bg-linea text-tinta-suave' : 'bg-turquesa/15 text-[#006B6B]'}`}>{t.razon}</p>
         {t.bio && <p className="mt-3 text-sm leading-relaxed">{t.bio}</p>}
         {t.busca.length > 0 && <section className="mt-4"><h2 className="mb-2 text-xs font-bold uppercase tracking-wider text-[#B0103F]">Busca</h2><Etiquetas items={t.busca} color="rosa" /></section>}
         {t.ofrece.length > 0 && <section className="mt-4"><h2 className="mb-2 text-xs font-bold uppercase tracking-wider text-azul">Ofrece</h2><Etiquetas items={t.ofrece} color="azul" /></section>}
