@@ -2,6 +2,7 @@ import type { ReactNode } from 'react'
 import { HashRouter, Navigate, Route, Routes, useLocation } from 'react-router-dom'
 import { Aviso, Cargando, Pantalla } from './components/ui'
 import { perfilCompleto, SesionProvider, useSesion } from './lib/sesion'
+import { supabase } from './lib/supabase'
 import Landing from './pages/Landing'
 import Registro from './pages/Registro'
 import Entrar from './pages/Entrar'
@@ -25,7 +26,17 @@ function ConSesion({ children }: { children: ReactNode }) {
   const loc = useLocation()
   if (cargando) return <Cargando />
   if (!session) return <Navigate to="/entrar" replace />
-  if (error) return <Pantalla><Aviso>{error}</Aviso></Pantalla>
+  if (error) return (
+    <Pantalla>
+      <div className="space-y-4">
+        <h1 className="text-xl font-extrabold">No pudimos cargar tu perfil</h1>
+        <Aviso>{error}</Aviso>
+        <p className="text-sm text-tinta-suave">Revisa tu conexión e inténtalo de nuevo. Si sigue fallando, cierra sesión y vuelve a entrar con tu correo.</p>
+        <button className="btn-primario w-full" onClick={() => window.location.reload()}>Reintentar</button>
+        <button className="btn-secundario w-full" onClick={() => supabase.auth.signOut()}>Cerrar sesión</button>
+      </div>
+    </Pantalla>
+  )
   const completo = perfilCompleto(perfil)
   if (!completo && loc.pathname !== '/completar') return <Navigate to="/completar" replace />
   if (completo && loc.pathname === '/completar') return <Navigate to={INICIO} replace />

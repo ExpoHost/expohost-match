@@ -63,7 +63,20 @@ export async function guardarPerfil(b: Borrador, conConsentimiento: boolean) {
     })
     if (e2) throw e2
   }
-  if (b.foto) await subirFoto(await (await fetch(b.foto)).blob())
+  // La foto no frena el registro: si falla, la persona la agrega después desde "Editar mi perfil".
+  // (No se usa fetch(data:) porque la política de seguridad de la página lo bloquea en Safari.)
+  if (b.foto) {
+    try { await subirFoto(dataUrlABlob(b.foto)) } catch (e) { console.warn('foto no subida', e) }
+  }
+}
+
+function dataUrlABlob(dataUrl: string) {
+  const [cabecera, datos] = dataUrl.split(',')
+  const tipo = /data:([^;]+)/.exec(cabecera ?? '')?.[1] ?? 'image/jpeg'
+  const bin = atob(datos ?? '')
+  const bytes = new Uint8Array(bin.length)
+  for (let i = 0; i < bin.length; i++) bytes[i] = bin.charCodeAt(i)
+  return new Blob([bytes], { type: tipo })
 }
 
 export async function subirFoto(blob: Blob) {
