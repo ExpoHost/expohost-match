@@ -2,6 +2,7 @@ import { useCallback, useEffect, useRef, useState, type PointerEvent } from 'rea
 import { useNavigate } from 'react-router-dom'
 import { Aviso, Avatar, Etiquetas, Pantalla } from '../components/ui'
 import { supabase } from '../lib/supabase'
+import { avisarReunion } from '../lib/correos'
 import { mensajeError, useCatalogos, useFoto } from '../lib/utilidades'
 
 type Tarjeta = {
@@ -16,7 +17,7 @@ export default function Descubrir() {
   const [tarjetas, setTarjetas] = useState<Tarjeta[]>([])
   const [cargando, setCargando] = useState(true)
   const [error, setError] = useState<string | null>(null)
-  const [ultimoNo, setUltimoNo] = useState<Tarjeta | null>(null) // para "Deshacer"
+  const [ultimo, setUltimo] = useState<Tarjeta | null>(null) // última decisión (♥ o ✕), para "Deshacer"
   const [match, setMatch] = useState<{ id: string; nombre: string } | null>(null)
   const [ocupado, setOcupado] = useState(false)
 
@@ -36,19 +37,23 @@ export default function Descubrir() {
     const { data, error } = await supabase.rpc('swipe', { p_to: actual.id, p_liked: liked })
     setOcupado(false)
     if (error) { setError(mensajeError(error)); return }
-    setUltimoNo(liked ? null : actual)
+    setUltimo(actual)
     const resto = tarjetas.slice(1)
     setTarjetas(resto)
     if (data) setMatch({ id: data, nombre: actual.nombre })
     if (resto.length === 0) cargar()
   }
 
+  // Deshace la última decisión: vuelve a mostrar el perfil y, si hubo match, lo quita
+  // (la otra persona conserva su ♥, así que un nuevo ♥ rehace el match).
   async function deshacer() {
-    if (!ultimoNo) return
-    const { error } = await supabase.rpc('deshacer_ultimo_swipe')
+    if (!ultimo) return
+    const { data, error } = await supabase.rpc('deshacer_ultimo_swipe')
     if (error) { setError(mensajeError(error)); return }
-    setTarjetas((t) => [ultimoNo, ...t])
-    setUltimoNo(null)
+    if (data) avisarReunion(data, 'cancelada')
+    setMatch(null)
+    setTarjetas((t) => [ultimo, ...t])
+    setUltimo(null)
   }
 
   return (
@@ -61,7 +66,7 @@ export default function Descubrir() {
           <h1 className="text-xl font-extrabold">Ya viste todos los perfiles por ahora</h1>
           <p className="mt-2 text-tinta-suave">Cada día se registran más personas. Vuelve más tarde o revisa tu agenda.</p>
           <button className="btn-primario mt-6 w-full" onClick={() => navigate('/agenda')}>Ver mi agenda</button>
-          {ultimoNo && <button className="btn-secundario mt-3 w-full" onClick={deshacer}>Deshacer el último ✕</button>}
+          {ultimo && <button className="btn-secundario mt-3 w-full" onClick={deshacer}>Deshacer la última decisión</button>}
         </div>
       ) : (
         <>
@@ -72,7 +77,7 @@ export default function Descubrir() {
           <div className="h-28" />
           <div className="fixed inset-x-0 bottom-[calc(4rem+env(safe-area-inset-bottom))] z-10 bg-gradient-to-t from-hueso via-hueso/90 to-transparent pb-3 pt-6">
             <div className="mx-auto flex max-w-md items-center justify-center gap-6">
-              <button onClick={deshacer} disabled={!ultimoNo} aria-label="Deshacer el último ✕"
+              <button onClick={deshacer} disabled={!ultimo} aria-label="Deshacer la última decisión"
                 className="flex h-12 w-12 items-center justify-center rounded-full border border-linea bg-white text-xl text-azul shadow-suave transition active:scale-95 disabled:invisible">↶</button>
               <button onClick={() => decidir(false)} disabled={ocupado} aria-label={`No me interesa ${actual.nombre}`}
                 className="flex h-18 w-18 items-center justify-center rounded-full border border-linea bg-white text-3xl text-tinta-suave shadow-suave transition active:scale-95 disabled:opacity-50">✕</button>
@@ -92,6 +97,7 @@ export default function Descubrir() {
             <p className="mt-2 text-tinta-suave">A {match.nombre} también le interesa reunirse contigo. Elige un horario para la feria.</p>
             <button className="btn-primario mt-6 w-full" autoFocus onClick={() => navigate(`/match/${match.id}`)}>Elegir horario</button>
             <button className="btn-secundario mt-3 w-full" onClick={() => setMatch(null)}>Seguir descubriendo</button>
+            <button className="mt-4 min-h-11 text-sm font-semibold text-tinta-suave" onClick={deshacer}>Fue un error: deshacer el ♥</button>
           </div>
         </div>
       )}
@@ -124,23 +130,34 @@ function TarjetaPerfil({ t, categoria }: { t: Tarjeta; categoria?: string }) {
   )
 }
 
-// Deslizar a la derecha = ♥, a la izquierda = ✕ (los botones siguen siendo la forma principal)
+// Deslizar a la derecha = ♥, a la izquierda = ✕ (los botones siguen siendo la forma principal).
+// Solo cuenta si la tarjeta se arrastra más de la mitad de su ancho y en horizontal; mientras
+// se arrastra se muestra qué va a pasar, para evitar decisiones por un roce.
 function Deslizable({ children, onDecidir }: { children: React.ReactNode; onDecidir: (liked: boolean) => void }) {
-  const inicio = useRef<number | null>(null)
-  const [dx, setDx] = useState(0)
-  const abajo = (e: PointerEvent) => { if (e.pointerType !== 'mouse') inicio.current = e.clientX }
-  const mover = (e: PointerEvent) => { if (inicio.current !== null) setDx(e.clientX - inicio.current) }
+  const inicio = useRef<{ x: number; y: number } | null>(null)
+  const caja = useRef<HTMLDivElement>(null)
+  const [d, setD] = useState({ x: 0, y: 0 })
+  const umbral = () => Math.max(160, (caja.current?.offsetWidth ?? 320) * 0.5)
+  const abajo = (e: PointerEvent) => { if (e.pointerType !== 'mouse') inicio.current = { x: e.clientX, y: e.clientY } }
+  const mover = (e: PointerEvent) => { if (inicio.current) setD({ x: e.clientX - inicio.current.x, y: e.clientY - inicio.current.y }) }
   const soltar = () => {
-    if (inicio.current === null) return
+    if (!inicio.current) return
     inicio.current = null
-    if (Math.abs(dx) > 110) onDecidir(dx > 0)
-    setDx(0)
+    if (Math.abs(d.x) > umbral() && Math.abs(d.x) > Math.abs(d.y) * 2) onDecidir(d.x > 0)
+    setD({ x: 0, y: 0 })
   }
+  const progreso = Math.min(1, Math.abs(d.x) / umbral())
   return (
-    <div onPointerDown={abajo} onPointerMove={mover} onPointerUp={soltar} onPointerCancel={soltar}
-      style={{ transform: dx ? `translateX(${dx}px) rotate(${dx / 30}deg)` : undefined, touchAction: 'pan-y' }}
-      className={`select-none ${dx ? '' : 'transition-transform'}`}>
+    <div ref={caja} onPointerDown={abajo} onPointerMove={mover} onPointerUp={soltar} onPointerCancel={soltar}
+      style={{ transform: d.x ? `translateX(${d.x}px) rotate(${d.x / 40}deg)` : undefined, touchAction: 'pan-y' }}
+      className={`relative select-none ${d.x ? '' : 'transition-transform'}`}>
       {children}
+      {d.x !== 0 && (
+        <span aria-hidden="true" style={{ opacity: progreso }}
+          className={`pointer-events-none absolute top-6 rounded-full px-4 py-2 text-lg font-extrabold text-white ${d.x > 0 ? 'left-6 bg-rosa' : 'right-6 bg-tinta-suave'}`}>
+          {d.x > 0 ? (progreso >= 1 ? 'Suelta para ♥' : '♥') : (progreso >= 1 ? 'Suelta para ✕' : '✕')}
+        </span>
+      )}
     </div>
   )
 }

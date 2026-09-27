@@ -1,5 +1,5 @@
 import { useCallback, useEffect, useState } from 'react'
-import { Link, useParams } from 'react-router-dom'
+import { Link, useNavigate, useParams } from 'react-router-dom'
 import { Aviso, Avatar, Pantalla } from '../components/ui'
 import { supabase } from '../lib/supabase'
 import { descargarIcs, diaTexto, hora, horaFin, lugarTexto, type MiMatch, type Propuesta } from '../lib/reuniones'
@@ -13,6 +13,15 @@ export default function Agendar() {
   const [propuestas, setPropuestas] = useState<Propuesta[] | null>(null)
   const [error, setError] = useState<string | null>(null)
   const [reservando, setReservando] = useState<number | null>(null)
+  const [confirmarDeshacer, setConfirmarDeshacer] = useState(false)
+  const navigate = useNavigate()
+
+  async function deshacer() {
+    const { data, error } = await supabase.rpc('deshacer_match', { p_match: id })
+    if (error) { setError(mensajeError(error)); setConfirmarDeshacer(false); return }
+    if (data) avisarReunion(data, 'cancelada')
+    navigate('/descubrir', { replace: true })
+  }
 
   const cargar = useCallback(async () => {
     const { data, error } = await supabase.rpc('mis_matches')
@@ -82,6 +91,22 @@ export default function Agendar() {
           </div>
         </section>
       )}
+
+      <section className="mt-10 border-t border-linea pt-6">
+        {confirmarDeshacer ? (
+          <div className="space-y-3">
+            <p className="text-sm text-tinta-suave">
+              Se quitará el match{m.meeting_id ? ' y se cancelará la reunión' : ''}. {m.nombre.split(' ')[0]} volverá a aparecer en Descubrir y, si le das ♥ otra vez, el match se rehace.
+            </p>
+            <div className="flex gap-3">
+              <button className="btn-secundario flex-1" onClick={() => setConfirmarDeshacer(false)}>No, dejarlo</button>
+              <button className="btn flex-1 border border-rosa bg-rosa/10 text-[#B0103F]" onClick={deshacer}>Sí, deshacer</button>
+            </div>
+          </div>
+        ) : (
+          <button className="min-h-11 text-sm font-semibold text-tinta-suave" onClick={() => setConfirmarDeshacer(true)}>Deshacer este match</button>
+        )}
+      </section>
     </Pantalla>
   )
 }
