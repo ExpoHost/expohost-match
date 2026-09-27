@@ -22,6 +22,9 @@ export default function Landing() {
         <p className="rounded-2xl bg-white px-4 py-3 text-center text-sm text-tinta-suave">
           En la feria entra con tus datos móviles.
         </p>
+        <p className="text-center text-xs text-tinta-suave">
+          Expohost SAS · <Link to="/privacidad" className="inline-flex min-h-11 items-center underline">Privacidad y datos personales</Link>
+        </p>
       </div>
     </main>
   )

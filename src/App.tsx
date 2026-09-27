@@ -11,6 +11,8 @@ import Descubrir from './pages/Descubrir'
 import Agenda from './pages/Agenda'
 import Agendar from './pages/Agendar'
 import Admin from './pages/admin/Admin'
+import Confirmar from './pages/Confirmar'
+import Legal from './pages/Legal'
 
 // Panel de organización: solo con rol admin en app_metadata (la base lo vuelve a comprobar)
 function SoloAdmin({ children }: { children: ReactNode }) {
@@ -58,6 +60,8 @@ export default function App() {
           <Route path="/" element={<SoloVisitante><Landing /></SoloVisitante>} />
           <Route path="/registro" element={<SoloVisitante><Registro modo="nuevo" /></SoloVisitante>} />
           <Route path="/entrar" element={<SoloVisitante><Entrar /></SoloVisitante>} />
+          <Route path="/confirmar" element={<SoloVisitante><Confirmar /></SoloVisitante>} />
+          <Route path="/privacidad" element={<Legal />} />
           <Route path="/completar" element={<ConSesion><Registro modo="completar" /></ConSesion>} />
           <Route path="/descubrir" element={<ConSesion><Descubrir /></ConSesion>} />
           <Route path="/agenda" element={<ConSesion><Agenda /></ConSesion>} />

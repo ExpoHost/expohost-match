@@ -5,6 +5,7 @@ import { FRANJAS } from '../lib/catalogos'
 import { useSesion } from '../lib/sesion'
 import { useCatalogos } from '../lib/utilidades'
 import { Representantes } from '../components/Representantes'
+import { EliminarCuenta } from '../components/EliminarCuenta'
 
 export default function Perfil() {
   const { perfil, session } = useSesion()
@@ -54,6 +55,8 @@ export default function Perfil() {
         <Link to="/perfil/editar" className="btn-primario w-full">Editar mi perfil</Link>
         <button className="btn-secundario w-full" onClick={() => supabase.auth.signOut({ scope: 'local' })}>Cerrar sesión</button>
       </div>
+      <EliminarCuenta />
+      <p className="mt-6 text-center text-xs text-tinta-suave"><Link to="/privacidad" className="inline-flex min-h-11 items-center underline">Privacidad y datos personales</Link></p>
     </Pantalla>
   )
 }
