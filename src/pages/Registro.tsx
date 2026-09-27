@@ -18,7 +18,7 @@ const esquemaDatos = z.object({
   empresa: sinHtml('Empresa').pipe(z.string().min(2, 'Escribe el nombre de tu empresa').max(80)),
   cargo: sinHtml('Cargo').pipe(z.string().max(80)),
   ciudad: sinHtml('Ciudad').pipe(z.string().max(60)),
-  telefono: z.string().trim().refine((v) => v === '' || /^\+?[\d\s-]{7,20}$/.test(v), 'Escribe un celular válido, por ejemplo +57 300 123 4567'),
+  telefono: z.string().trim().refine((v) => /^\+\d[\d\s-]{7,19}$/.test(v), 'Escribe tu celular con el código del país, por ejemplo +57 300 123 4567'),
   categoria: z.string().min(1, 'Elige la categoría que mejor te describe'),
   solicitud: z.enum(['', 'expositor_stand', 'expositor_sin_stand']),
   stand: sinHtml('Stand').pipe(z.string().max(20)),
@@ -55,12 +55,19 @@ export default function Registro({ modo }: { modo: Modo }) {
     setB((x) => ({ ...x, [k]: x[k].includes(v) ? x[k].filter((y) => y !== v) : [...x[k], v] }))
   const irA = (n: number) => { setError(null); setPaso(n); window.scrollTo(0, 0) }
 
-  function validarPaso1() {
-    const r = esquemaDatos.safeParse(b)
+  // Lee los valores directamente del formulario: el autocompletado del navegador o de un
+  // gestor de contraseñas puede llenar campos sin avisarle a React.
+  function validarPaso1(form: HTMLFormElement) {
+    const fd = new FormData(form)
+    const leer = (k: keyof Borrador, actual: string) => { const v = fd.get(k); return typeof v === 'string' ? v : actual }
+    const datos: Borrador = { ...b, nombre: leer('nombre', b.nombre), empresa: leer('empresa', b.empresa), cargo: leer('cargo', b.cargo),
+      ciudad: leer('ciudad', b.ciudad), email: leer('email', b.email), telefono: leer('telefono', b.telefono), stand: leer('stand', b.stand), bio: leer('bio', b.bio) }
+    setB(datos)
+    const r = esquemaDatos.safeParse(datos)
     const errs: Record<string, string> = {}
     if (!r.success) for (const i of r.error.issues) errs[String(i.path[0])] ??= i.message
     if (modo === 'nuevo') {
-      const c = esquemaCorreo.safeParse(b.email)
+      const c = esquemaCorreo.safeParse(datos.email)
       if (!c.success) errs.email = c.error.issues[0]!.message
     }
     if (!acepta) errs.acepta = 'Para continuar debes autorizar el tratamiento de tus datos'
@@ -117,7 +124,7 @@ export default function Registro({ modo }: { modo: Modo }) {
       </div>
 
       {paso === 1 && (
-        <form onSubmit={(e) => { e.preventDefault(); validarPaso1() }} className="space-y-5" noValidate>
+        <form onSubmit={(e) => { e.preventDefault(); validarPaso1(e.currentTarget) }} className="space-y-5" noValidate>
           <h1 className="text-2xl font-extrabold">{titulo}</h1>
 
           <div className="flex items-center gap-4">
@@ -129,21 +136,21 @@ export default function Registro({ modo }: { modo: Modo }) {
           </div>
 
           <label className="block"><span className="etiqueta">Nombre y apellido</span>
-            <input className="campo" value={b.nombre} onChange={(e) => set('nombre', e.target.value)} autoComplete="name" maxLength={80} />{err('nombre')}</label>
+            <input className="campo" name="nombre" defaultValue={b.nombre} autoComplete="name" maxLength={80} />{err('nombre')}</label>
           <label className="block"><span className="etiqueta">Empresa</span>
-            <input className="campo" value={b.empresa} onChange={(e) => set('empresa', e.target.value)} autoComplete="organization" maxLength={80} disabled={expositorAprobado} />{err('empresa')}</label>
+            <input className="campo" name="empresa" defaultValue={b.empresa} autoComplete="organization" maxLength={80} disabled={expositorAprobado} />{err('empresa')}</label>
           <label className="block"><span className="etiqueta">Cargo</span>
-            <input className="campo" value={b.cargo} onChange={(e) => set('cargo', e.target.value)} autoComplete="organization-title" maxLength={80} />{err('cargo')}</label>
+            <input className="campo" name="cargo" defaultValue={b.cargo} autoComplete="organization-title" maxLength={80} />{err('cargo')}</label>
           <label className="block"><span className="etiqueta">Ciudad</span>
-            <input className="campo" value={b.ciudad} onChange={(e) => set('ciudad', e.target.value)} autoComplete="address-level2" maxLength={60} />{err('ciudad')}</label>
+            <input className="campo" name="ciudad" defaultValue={b.ciudad} autoComplete="address-level2" maxLength={60} />{err('ciudad')}</label>
           {modo === 'nuevo' && (
             <label className="block"><span className="etiqueta">Correo</span>
-              <input className="campo" type="email" inputMode="email" value={b.email} onChange={(e) => set('email', e.target.value)} autoComplete="email" />
+              <input className="campo" name="email" type="email" inputMode="email" defaultValue={b.email} autoComplete="email" />
               <span className="mt-1 block text-xs text-tinta-suave">Te enviaremos un código para entrar. Solo lo verán tus matches.</span>{err('email')}</label>
           )}
           <label className="block"><span className="etiqueta">Celular (WhatsApp)</span>
-            <input className="campo" type="tel" inputMode="tel" value={b.telefono} onChange={(e) => set('telefono', e.target.value)} autoComplete="tel" placeholder="+57 300 123 4567" />
-            <span className="mt-1 block text-xs text-tinta-suave">Opcional. Solo lo verán las personas con quienes hagas match.</span>{err('telefono')}</label>
+            <input className="campo" name="telefono" type="tel" inputMode="tel" defaultValue={b.telefono} autoComplete="tel" placeholder="+57 300 123 4567" />
+            <span className="mt-1 block text-xs text-tinta-suave">Con código del país (+57 para Colombia). Solo lo verán las personas con quienes hagas match.</span>{err('telefono')}</label>
           <label className="block"><span className="etiqueta">¿Qué te describe mejor?</span>
             <select className="campo" value={b.categoria} onChange={(e) => set('categoria', e.target.value)}>
               <option value="">Elige una categoría</option>
@@ -164,7 +171,7 @@ export default function Registro({ modo }: { modo: Modo }) {
                 ))}
                 {b.solicitud === 'expositor_stand' && (
                   <label className="block"><span className="etiqueta">Número de stand</span>
-                    <input className="campo" value={b.stand} onChange={(e) => set('stand', e.target.value)} maxLength={20} />{err('stand')}</label>
+                    <input className="campo" name="stand" defaultValue={b.stand} maxLength={20} />{err('stand')}</label>
                 )}
                 {b.solicitud !== '' && <p className="text-xs text-tinta-suave">La organización verifica tu participación como expositor. Mientras tanto usas la app como asistente.</p>}
               </div>
@@ -172,7 +179,7 @@ export default function Registro({ modo }: { modo: Modo }) {
           </fieldset>
 
           <label className="block"><span className="etiqueta">Preséntate en una frase</span>
-            <textarea className="campo min-h-24 py-3" value={b.bio} onChange={(e) => set('bio', e.target.value)} maxLength={280} placeholder="Qué haces y qué te gustaría lograr en la feria" />
+            <textarea className="campo min-h-24 py-3" name="bio" defaultValue={b.bio} onChange={(e) => set('bio', e.target.value)} maxLength={280} placeholder="Qué haces y qué te gustaría lograr en la feria" />
             <span className="mt-1 block text-right text-xs text-tinta-suave">{b.bio.length}/280</span>{err('bio')}</label>
 
           {modo !== 'editar' && (
