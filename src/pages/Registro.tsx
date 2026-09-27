@@ -16,13 +16,13 @@ const sinHtml = (campo: string) => z.string().trim().refine((v) => !/[<>]/.test(
 const esquemaDatos = z.object({
   nombre: sinHtml('Nombre').pipe(z.string().min(2, 'Escribe tu nombre completo').max(80)),
   empresa: sinHtml('Empresa').pipe(z.string().min(2, 'Escribe el nombre de tu empresa').max(80)),
-  cargo: sinHtml('Cargo').pipe(z.string().max(80)),
-  ciudad: sinHtml('Ciudad').pipe(z.string().max(60)),
+  cargo: sinHtml('Cargo').pipe(z.string().min(2, 'Escribe tu cargo').max(80)),
+  ciudad: sinHtml('Ciudad').pipe(z.string().min(2, 'Escribe tu ciudad').max(60)),
   telefono: z.string().trim().refine((v) => /^\+\d{1,3} \d{6,15}$/.test(v), 'Escribe tu número de celular (solo dígitos)'),
   categoria: z.string().min(1, 'Elige la categoría que mejor te describe'),
   solicitud: z.enum(['', 'expositor_stand', 'expositor_sin_stand']),
   stand: sinHtml('Stand').pipe(z.string().max(20)),
-  bio: sinHtml('Presentación').pipe(z.string().max(280, 'Máximo 280 caracteres')),
+  bio: sinHtml('Presentación').pipe(z.string().min(10, 'Preséntate en una frase (mínimo 10 caracteres)').max(280, 'Máximo 280 caracteres')),
 }).refine((d) => d.solicitud !== 'expositor_stand' || d.stand.length > 0, { path: ['stand'], message: 'Escribe tu número de stand' })
 
 const esquemaCorreo = z.string().trim().toLowerCase().email('Escribe un correo válido')
@@ -72,6 +72,7 @@ export default function Registro({ modo }: { modo: Modo }) {
       const c = esquemaCorreo.safeParse(datos.email)
       if (!c.success) errs.email = c.error.issues[0]!.message
     }
+    if (!datos.foto && !perfil?.foto_path) errs.foto = 'Agrega una foto de perfil'
     if (!acepta) errs.acepta = 'Para continuar debes autorizar el tratamiento de tus datos'
     setErrores(errs)
     if (Object.keys(errs).length) { setError('Revisa los campos marcados.'); return }
@@ -129,12 +130,16 @@ export default function Registro({ modo }: { modo: Modo }) {
         <form onSubmit={(e) => { e.preventDefault(); validarPaso1(e.currentTarget) }} className="space-y-5" noValidate>
           <h1 className="text-2xl font-extrabold">{titulo}</h1>
 
-          <div className="flex items-center gap-4">
-            <Avatar src={b.foto} path={b.foto ? null : perfil?.foto_path} nombre={b.nombre || '?'} tam="h-20 w-20 text-2xl" />
-            <label className="btn-secundario cursor-pointer text-sm">
-              {b.foto || perfil?.foto_path ? 'Cambiar foto' : 'Agregar foto (opcional)'}
-              <input type="file" accept="image/*" className="sr-only" onChange={(e) => elegirFoto(e.target.files?.[0])} />
-            </label>
+          <p className="text-sm text-tinta-suave">Todos los datos son obligatorios: así las demás personas saben con quién se reúnen.</p>
+          <div>
+            <div className="flex items-center gap-4">
+              <Avatar src={b.foto} path={b.foto ? null : perfil?.foto_path} nombre={b.nombre || '?'} tam="h-20 w-20 text-2xl" />
+              <label className="btn-secundario cursor-pointer text-sm">
+                {b.foto || perfil?.foto_path ? 'Cambiar foto' : 'Agregar foto'}
+                <input type="file" accept="image/*" className="sr-only" onChange={(e) => elegirFoto(e.target.files?.[0])} />
+              </label>
+            </div>
+            {err('foto')}
           </div>
 
           <label className="block"><span className="etiqueta">Nombre y apellido</span>
