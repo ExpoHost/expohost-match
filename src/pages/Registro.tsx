@@ -4,7 +4,7 @@ import { z } from 'zod'
 import { Aviso, Avatar, Chip, Pantalla } from '../components/ui'
 import { Codigo } from '../components/Codigo'
 import { supabase, urlRegreso } from '../lib/supabase'
-import { COMERCIAL_TEXTO, CONSENT_TEXTO, FRANJAS, PARTICIPACION, POLITICA_URL } from '../lib/catalogos'
+import { COMERCIAL_TEXTO, CONSENT_TEXTO, FRANJAS, PAISES, PARTICIPACION, POLITICA_URL, separarTelefono } from '../lib/catalogos'
 import { guardarBorrador, guardarPerfil, leerBorrador, useSesion, type Borrador, type Perfil } from '../lib/sesion'
 import { mensajeError, redimensionarFoto, useCatalogos } from '../lib/utilidades'
 
@@ -18,7 +18,7 @@ const esquemaDatos = z.object({
   empresa: sinHtml('Empresa').pipe(z.string().min(2, 'Escribe el nombre de tu empresa').max(80)),
   cargo: sinHtml('Cargo').pipe(z.string().max(80)),
   ciudad: sinHtml('Ciudad').pipe(z.string().max(60)),
-  telefono: z.string().trim().refine((v) => /^\+\d[\d\s-]{7,19}$/.test(v), 'Escribe tu celular con el código del país, por ejemplo +57 300 123 4567'),
+  telefono: z.string().trim().refine((v) => /^\+\d{1,3} \d{6,15}$/.test(v), 'Escribe tu número de celular (solo dígitos)'),
   categoria: z.string().min(1, 'Elige la categoría que mejor te describe'),
   solicitud: z.enum(['', 'expositor_stand', 'expositor_sin_stand']),
   stand: sinHtml('Stand').pipe(z.string().max(20)),
@@ -61,7 +61,9 @@ export default function Registro({ modo }: { modo: Modo }) {
     const fd = new FormData(form)
     const leer = (k: keyof Borrador, actual: string) => { const v = fd.get(k); return typeof v === 'string' ? v : actual }
     const datos: Borrador = { ...b, nombre: leer('nombre', b.nombre), empresa: leer('empresa', b.empresa), cargo: leer('cargo', b.cargo),
-      ciudad: leer('ciudad', b.ciudad), email: leer('email', b.email), telefono: leer('telefono', b.telefono), stand: leer('stand', b.stand), bio: leer('bio', b.bio) }
+      ciudad: leer('ciudad', b.ciudad), email: leer('email', b.email), stand: leer('stand', b.stand), bio: leer('bio', b.bio),
+      // país elegido en la lista + número: se guarda como "+57 3001234567"
+      telefono: (() => { const c = PAISES.find(([n]) => n === fd.get('pais'))?.[1] ?? '57'; const n = String(fd.get('numero') ?? '').replace(/\D/g, ''); return n ? `+${c} ${n}` : '' })() }
     setB(datos)
     const r = esquemaDatos.safeParse(datos)
     const errs: Record<string, string> = {}
@@ -148,9 +150,16 @@ export default function Registro({ modo }: { modo: Modo }) {
               <input className="campo" name="email" type="email" inputMode="email" defaultValue={b.email} autoComplete="email" />
               <span className="mt-1 block text-xs text-tinta-suave">Te enviaremos un código para entrar. Solo lo verán tus matches.</span>{err('email')}</label>
           )}
-          <label className="block"><span className="etiqueta">Celular (WhatsApp)</span>
-            <input className="campo" name="telefono" type="tel" inputMode="tel" defaultValue={b.telefono} autoComplete="tel" placeholder="+57 300 123 4567" />
-            <span className="mt-1 block text-xs text-tinta-suave">Con código del país (+57 para Colombia). Solo lo verán las personas con quienes hagas match.</span>{err('telefono')}</label>
+          <div>
+            <span className="etiqueta" id="et-celular">Celular (WhatsApp)</span>
+            <div className="flex gap-2">
+              <select className="campo w-2/5 shrink-0 px-3" name="pais" defaultValue={separarTelefono(b.telefono).pais} aria-label="País del celular">
+                {PAISES.map(([nombre, codigo]) => <option key={nombre} value={nombre}>{nombre} +{codigo}</option>)}
+              </select>
+              <input className="campo" name="numero" type="tel" inputMode="numeric" defaultValue={separarTelefono(b.telefono).numero} autoComplete="tel-national" placeholder="300 123 4567" aria-labelledby="et-celular" />
+            </div>
+            <span className="mt-1 block text-xs text-tinta-suave">Solo lo verán las personas con quienes hagas match.</span>{err('telefono')}
+          </div>
           <label className="block"><span className="etiqueta">¿Qué te describe mejor?</span>
             <select className="campo" value={b.categoria} onChange={(e) => set('categoria', e.target.value)}>
               <option value="">Elige una categoría</option>

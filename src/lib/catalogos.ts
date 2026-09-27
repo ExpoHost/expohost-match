@@ -14,6 +14,23 @@ export const PARTICIPACION = [
   { id: 'expositor_sin_stand', nombre: 'Empresa/servicio sin stand', detalle: 'Ofrezco productos o servicios, pero no tengo stand en la feria.' },
 ] as const
 
+// Códigos de país para el celular (Colombia primero, el resto en orden alfabético)
+export const PAISES = [
+  ['Colombia', '57'], ['Argentina', '54'], ['Bolivia', '591'], ['Brasil', '55'], ['Canadá', '1'], ['Chile', '56'],
+  ['Costa Rica', '506'], ['Ecuador', '593'], ['El Salvador', '503'], ['España', '34'], ['Estados Unidos', '1'],
+  ['Guatemala', '502'], ['Honduras', '504'], ['México', '52'], ['Nicaragua', '505'], ['Panamá', '507'],
+  ['Paraguay', '595'], ['Perú', '51'], ['Portugal', '351'], ['Puerto Rico', '1'], ['República Dominicana', '1'],
+  ['Uruguay', '598'], ['Venezuela', '58'],
+] as const
+
+// "+57 3001234567" → { pais: 'Colombia', numero: '3001234567' }
+export function separarTelefono(telefono: string) {
+  const m = /^\+(\d{1,3})\s*(.*)$/.exec(telefono.trim())
+  if (!m) return { pais: 'Colombia', numero: telefono.replace(/\D/g, '') }
+  const pais = PAISES.find(([, c]) => c === m[1])?.[0] ?? 'Colombia'
+  return { pais, numero: m[2]!.replace(/\D/g, '') }
+}
+
 export const CONSENT_VERSION = '2026-09-24'
 
 export const CONSENT_TEXTO =
