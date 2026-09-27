@@ -154,7 +154,7 @@ export default function Registro({ modo }: { modo: Modo }) {
         <form onSubmit={(e) => { e.preventDefault(); validarPaso1(e.currentTarget) }} className="space-y-5" noValidate>
           <h1 className="text-2xl font-extrabold">{titulo}</h1>
 
-          <p className="text-sm text-tinta-suave">Todos los datos son obligatorios, excepto la foto. Así las demás personas saben con quién se reúnen.</p>
+          <p className="text-sm text-tinta-suave">{modo === 'editar' ? 'Cambia lo que necesites y toca Guardar al final.' : 'Son 3 pasos cortos: tus datos, qué buscas y qué ofreces, y cuándo puedes reunirte. Todo es obligatorio, excepto la foto.'}</p>
           <div>
             <div className="flex items-center gap-4">
               <Avatar src={b.foto} path={b.foto ? null : perfil?.foto_path} nombre={b.nombre || '?'} tam="h-20 w-20 text-2xl" />
@@ -177,7 +177,7 @@ export default function Registro({ modo }: { modo: Modo }) {
           {modo === 'nuevo' && (
             <label className="block"><span className="etiqueta">Correo</span>
               <input className="campo" name="email" type="email" inputMode="email" defaultValue={b.email} autoComplete="email" />
-              <span className="mt-1 block text-xs text-tinta-suave">Te enviaremos un código para entrar. Solo lo verán tus matches.</span>{err('email')}</label>
+              <span className="mt-1 block text-sm text-tinta-suave">Te enviaremos un código para entrar. Solo lo verán tus matches.</span>{err('email')}</label>
           )}
           <div>
             <span className="etiqueta" id="et-celular">Celular (WhatsApp)</span>
@@ -187,7 +187,7 @@ export default function Registro({ modo }: { modo: Modo }) {
               </select>
               <input className="campo" name="numero" type="tel" inputMode="numeric" defaultValue={separarTelefono(b.telefono).numero} autoComplete="tel-national" placeholder="300 123 4567" aria-labelledby="et-celular" />
             </div>
-            <span className="mt-1 block text-xs text-tinta-suave">Solo lo verán las personas con quienes hagas match.</span>{err('telefono')}
+            <span className="mt-1 block text-sm text-tinta-suave">Solo lo verán las personas con quienes hagas match.</span>{err('telefono')}
           </div>
           <label className="block"><span className="etiqueta">¿Qué te describe mejor?</span>
             <select className="campo" value={b.categoria} onChange={(e) => set('categoria', e.target.value)}>
@@ -210,7 +210,7 @@ export default function Registro({ modo }: { modo: Modo }) {
                 {b.solicitud === 'expositor_stand' && (
                   <label className="block"><span className="etiqueta">Número de stand <span className="text-[#B0103F]">(obligatorio)</span></span>
                     <input className="campo" name="stand" defaultValue={b.stand} maxLength={20} placeholder="Por ejemplo A-12" onBlur={(ev) => rellenarPorStand(ev.target.value, ev.target.form)} />
-                    <span className="mt-1 block text-xs text-tinta-suave">Escribe el número tal como aparece en tu contrato de expositor. La organización lo usará para verificar tu participación.</span>{err('stand')}</label>
+                    <span className="mt-1 block text-sm text-tinta-suave">Escribe el número tal como aparece en tu contrato de expositor. La organización lo usará para verificar tu participación.</span>{err('stand')}</label>
                 )}
               </div>
             )}
@@ -218,23 +218,23 @@ export default function Registro({ modo }: { modo: Modo }) {
 
           <label className="block"><span className="etiqueta">Preséntate en una frase</span>
             <textarea className="campo min-h-24 py-3" name="bio" defaultValue={b.bio} onChange={(e) => set('bio', e.target.value)} maxLength={280} placeholder="Qué haces y qué te gustaría lograr en la feria" />
-            <span className="mt-1 block text-right text-xs text-tinta-suave">{b.bio.length}/280</span>{err('bio')}</label>
+            <span className="mt-1 block text-right text-sm text-tinta-suave">{b.bio.length}/280</span>{err('bio')}</label>
 
           {modo !== 'editar' && (
             <div className="space-y-3 rounded-[22px] bg-white p-4">
               <p className="text-sm font-semibold">Aviso de privacidad</p>
-              <p className="text-xs leading-relaxed text-tinta-suave">
+              <p className="text-sm leading-relaxed text-tinta-suave">
                 Expohost SAS (NIT 901702368-6) es responsable del tratamiento de tus datos. Consulta la{' '}
                 <a href={POLITICA_URL} target="_blank" rel="noopener noreferrer" className="font-semibold text-azul underline">Política de Tratamiento de Datos</a>.
               </p>
               <label className="flex gap-3">
                 <input type="checkbox" className="mt-0.5 h-5 w-5 shrink-0 accent-azul" checked={acepta} onChange={(e) => setAcepta(e.target.checked)} />
-                <span className="text-xs leading-relaxed">{CONSENT_TEXTO}</span>
+                <span className="text-sm leading-relaxed">{CONSENT_TEXTO}</span>
               </label>
               {err('acepta')}
               <label className="flex gap-3">
                 <input type="checkbox" className="mt-0.5 h-5 w-5 shrink-0 accent-azul" checked={b.comercial} onChange={(e) => set('comercial', e.target.checked)} />
-                <span className="text-xs leading-relaxed">{COMERCIAL_TEXTO}</span>
+                <span className="text-sm leading-relaxed">{COMERCIAL_TEXTO}</span>
               </label>
             </div>
           )}
@@ -249,7 +249,7 @@ export default function Registro({ modo }: { modo: Modo }) {
         <form onSubmit={(e) => { e.preventDefault(); if (b.busca.length + b.ofrece.length === 0) { setError('Elige al menos una opción en Busco u Ofrezco.'); return } irA(3) }} className="space-y-6">
           <div>
             <h1 className="text-2xl font-extrabold">¿Qué buscas y qué ofreces?</h1>
-            <p className="mt-2 text-tinta-suave">Con esto elegimos a quién mostrarte primero. Puedes marcar varias.</p>
+            <p className="mt-2 text-tinta-suave">Toca las opciones que te describan; puedes marcar varias. Con esto te mostramos primero a las personas que más te convienen.</p>
           </div>
           <section>
             <h2 className="mb-3 text-lg font-bold text-[#D81B55]">Busco</h2>
@@ -271,7 +271,7 @@ export default function Registro({ modo }: { modo: Modo }) {
         <form onSubmit={terminar} className="space-y-6">
           <div>
             <h1 className="text-2xl font-extrabold">¿Cuándo puedes reunirte?</h1>
-            <p className="mt-2 text-tinta-suave">Las reuniones son de 25 minutos. Marca las franjas en las que estarás en la feria.</p>
+            <p className="mt-2 text-tinta-suave">Toca los momentos en que estarás en la feria (puedes marcar todos). Las reuniones duran 25 minutos y se agendan dentro de esos horarios.</p>
           </div>
           <div className="grid grid-cols-2 gap-3">
             {FRANJAS.map((f) => (

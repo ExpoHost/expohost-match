@@ -20,6 +20,8 @@ export default function Descubrir() {
   const [ultimo, setUltimo] = useState<Tarjeta | null>(null) // última decisión (♥ o ✕), para "Deshacer"
   const [match, setMatch] = useState<{ id: string; nombre: string } | null>(null)
   const [ocupado, setOcupado] = useState(false)
+  // Bienvenida de 3 pasos la primera vez (por navegador)
+  const [bienvenida, setBienvenida] = useState(() => { try { return !localStorage.getItem('expohost-bienvenida') } catch { return true } })
 
   const cargar = useCallback(async () => {
     setCargando(true)
@@ -58,6 +60,19 @@ export default function Descubrir() {
 
   return (
     <Pantalla nav>
+      {bienvenida && (
+        <div role="dialog" aria-modal="true" aria-labelledby="titulo-bienvenida" className="fixed inset-0 z-30 flex items-end justify-center bg-tinta/60 p-4 sm:items-center">
+          <div className="tarjeta w-full max-w-md space-y-4 p-7">
+            <h2 id="titulo-bienvenida" className="text-2xl font-extrabold">Así funciona</h2>
+            <ol className="space-y-3 text-base">
+              <li className="flex gap-3"><span className="flex h-8 w-8 shrink-0 items-center justify-center rounded-full bg-azul font-bold text-white">1</span><span>Verás una persona a la vez. Si te interesa reunirte con ella, toca <strong className="text-rosa">♥ Me interesa</strong>; si no, toca <strong>✕ No</strong>.</span></li>
+              <li className="flex gap-3"><span className="flex h-8 w-8 shrink-0 items-center justify-center rounded-full bg-azul font-bold text-white">2</span><span>Cuando los dos se marquen con ♥, la app les propone tres horas y ustedes eligen una.</span></li>
+              <li className="flex gap-3"><span className="flex h-8 w-8 shrink-0 items-center justify-center rounded-full bg-azul font-bold text-white">3</span><span>Tus reuniones quedan en <strong>Mi agenda</strong>, con el lugar y la hora, y te llegan por correo.</span></li>
+            </ol>
+            <button className="btn-primario w-full" autoFocus onClick={() => { setBienvenida(false); try { localStorage.setItem('expohost-bienvenida', '1') } catch { /* sin almacenamiento */ } }}>Entendido, empezar</button>
+          </div>
+        </div>
+      )}
       {error && <div className="mb-4"><Aviso>{error}</Aviso></div>}
       {cargando && !actual ? (
         <p className="py-20 text-center text-tinta-suave" role="status">Buscando perfiles compatibles…</p>

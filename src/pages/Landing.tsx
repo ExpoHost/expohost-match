@@ -13,6 +13,11 @@ export default function Landing() {
         <p className="mt-5 text-lg text-tinta-suave">
           Cuéntanos qué buscas o qué ofreces y te ayudamos a encontrar personas afines para agendar reuniones el 6 y 7 de octubre en Bogotá.
         </p>
+        <ol className="mt-6 space-y-2 text-sm text-tinta-suave">
+          <li><strong className="text-tinta">1.</strong> Creas tu perfil en 3 minutos.</li>
+          <li><strong className="text-tinta">2.</strong> Marcas con ♥ a las personas con las que quieres reunirte.</li>
+          <li><strong className="text-tinta">3.</strong> Si hay interés mutuo, eligen la hora y listo: reunión de 25 minutos en la feria.</li>
+        </ol>
       </section>
       <div className="space-y-4">
         <Link to="/registro" className="btn-primario w-full text-lg">Crear mi perfil</Link>

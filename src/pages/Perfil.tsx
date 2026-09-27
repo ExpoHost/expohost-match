@@ -55,6 +55,7 @@ export default function Perfil() {
         <Link to="/perfil/editar" className="btn-primario w-full">Editar mi perfil</Link>
         <button className="btn-secundario w-full" onClick={() => supabase.auth.signOut({ scope: 'local' })}>Cerrar sesión</button>
       </div>
+      <p className="mt-6 rounded-2xl bg-white px-4 py-3 text-sm text-tinta-suave">¿Necesitas ayuda? Escríbenos a <span className="font-semibold text-tinta">management@expohost.travel</span> o busca el match desk en la feria.</p>
       <EliminarCuenta />
       <p className="mt-6 text-center text-xs text-tinta-suave"><Link to="/privacidad" className="inline-flex min-h-11 items-center underline">Privacidad y datos personales</Link></p>
     </Pantalla>
