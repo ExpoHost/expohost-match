@@ -78,7 +78,7 @@ Deno.serve(async (req) => {
 <tr><td style="padding:0 4px 20px 4px;"><table role="presentation" cellpadding="0" cellspacing="0" border="0"><tr><td style="vertical-align:middle;padding-right:10px;"><img src="${APP_URL}/correo/arcos.png" width="74" height="24" alt="" style="display:block;border:0;"></td><td style="vertical-align:middle;font-family:Montserrat,Arial,sans-serif;font-size:14px;font-weight:800;letter-spacing:1px;color:#0D0D16;">EXPOHOST <span style="color:#0049FE;">MATCH</span></td></tr></table></td></tr>
 <tr><td style="background:#FFFFFF;border-radius:22px;padding:36px 28px;font-family:Montserrat,Arial,sans-serif;color:#0D0D16;">
 <h1 style="margin:0 0 8px 0;font-size:24px;line-height:1.3;font-weight:800;">Tu agenda del ${DIAS[dia]}</h1>
-<p style="margin:0 0 20px 0;font-size:15px;line-height:1.6;color:#4A4B58;">Hola, ${esc(p.nombre.split(' ')[0])}. Tienes ${p.items.length} reunión${p.items.length === 1 ? '' : 'es'} mañana en ExpoHost Bogotá. Toca "Confirmo" en cada una para avisar que vas.</p>
+<p style="margin:0 0 20px 0;font-size:15px;line-height:1.6;color:#4A4B58;">Hola, ${esc(p.nombre.split(' ')[0])}. Tienes ${p.items.length} reunión${p.items.length === 1 ? '' : 'es'} mañana en ExpoHost Bogotá. Toca "Confirmo" en cada una para avisar que vas, y llega 5 minutos antes al lugar indicado.</p>
 <table role="presentation" width="100%" cellpadding="0" cellspacing="0" border="0">${filas.join('')}</table>
 <p style="margin:24px 0 0 0;font-size:13px;line-height:1.6;color:#4A4B58;">Si no puedes ir a alguna, cancélala desde <a href="${APP_URL}/#/agenda" style="color:#0049FE;">Mi agenda</a> para liberar el espacio. Gimnasio Moderno, Bogotá. En la feria entra con tus datos móviles.</p>
 </td></tr>

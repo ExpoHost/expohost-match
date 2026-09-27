@@ -119,7 +119,8 @@ Deno.serve(async (req) => {
       ? {
           subject: `Reunión confirmada · ${cuando} · ${lugarTexto(reunion)}`,
           html: html('Tu reunión quedó confirmada', [
-            `Tienes una reunión con ${quien} en ExpoHost Bogotá 2026.`,
+            `Tienes una reunión con ${quien} en ExpoHost Bogotá 2026. Llega 5 minutos antes al lugar indicado.`,
+            'Si no puedes ir, cancélala desde la app para liberar el espacio. El archivo adjunto agrega la reunión a tu calendario.',
           ], { texto: 'Ver mi agenda', url: `${APP_URL}/#/agenda` }, [cuando, lugar, 'Gimnasio Moderno, Bogotá']),
           attachments: [{ filename: 'reunion-expohost.ics', content: btoa(unescape(encodeURIComponent(ics(reunion, otro)))) }],
           texto: `Reunión confirmada con ${otro.nombre}: ${cuando}, ${lugarTexto(reunion)}. Agenda: ${APP_URL}/#/agenda`,
