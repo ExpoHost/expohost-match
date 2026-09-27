@@ -80,8 +80,8 @@ export default function Agendar() {
         </section>
       ) : (
         <section className="mt-6">
-          <h2 className="text-lg font-extrabold">Elige un horario</h2>
-          <p className="mt-1 text-sm text-tinta-suave">Estos son los primeros horarios en que ambos están libres. Un toque y queda confirmado.</p>
+          <h2 className="text-lg font-extrabold">Elige la hora de la reunión</h2>
+          <p className="mt-1 text-sm text-tinta-suave">Estas son las primeras horas en que los dos están libres. Toca "Confirmar" en la que prefieras: queda reservada y les llega un correo a ambos.</p>
           {error && <div className="mt-4"><Aviso>{error}</Aviso></div>}
           <div className="mt-4 space-y-3">
             {propuestas === null && <p className="text-tinta-suave" role="status">Buscando horarios…</p>}

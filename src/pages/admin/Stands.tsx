@@ -60,7 +60,7 @@ export default function Stands() {
       <section className="space-y-2">
         <div className="flex items-center gap-3">
           <h2 className="text-lg font-extrabold">Stands cargados ({lista.length})</h2>
-          {lista.length > 0 && <button className="btn-secundario ml-auto text-sm" onClick={() => descargarCsv('stands', lista.map((f) => ({ empresa: f.empresa, stand: f.stand, correos: f.correos, categoria: f.categoria })))}>Exportar CSV</button>}
+          {lista.length > 0 && <button className="btn-secundario ml-auto text-sm" onClick={() => descargarCsv('stands', lista.map((f) => ({ empresa: f.empresa, stand: f.stand, correos: f.correos, categoria: f.categoria })))}>Descargar en Excel</button>}
         </div>
         {lista.length === 0 && <p className="text-sm text-tinta-suave">Aún no hay stands cargados.</p>}
         <ul className="space-y-1 text-sm">

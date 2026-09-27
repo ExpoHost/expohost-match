@@ -1,9 +1,9 @@
 import { NavLink } from 'react-router-dom'
 
 const ITEMS = [
-  { to: '/descubrir', texto: 'Descubrir', icono: 'M12 21s-7-4.5-9.5-9A5.5 5.5 0 0 1 12 6a5.5 5.5 0 0 1 9.5 6C19 16.5 12 21 12 21z' },
+  { to: '/descubrir', texto: 'Perfiles', icono: 'M12 21s-7-4.5-9.5-9A5.5 5.5 0 0 1 12 6a5.5 5.5 0 0 1 9.5 6C19 16.5 12 21 12 21z' },
   { to: '/agenda', texto: 'Mi agenda', icono: 'M4 6h16v14H4zM4 10h16M8 3v4M16 3v4' },
-  { to: '/perfil', texto: 'Perfil', icono: 'M12 12a4 4 0 1 0 0-8 4 4 0 0 0 0 8zM4 21a8 8 0 0 1 16 0' },
+  { to: '/perfil', texto: 'Mi perfil', icono: 'M12 12a4 4 0 1 0 0-8 4 4 0 0 0 0 8zM4 21a8 8 0 0 1 16 0' },
 ]
 
 export function Navegacion() {

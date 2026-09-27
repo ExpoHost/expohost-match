@@ -64,7 +64,7 @@ export default function Descubrir() {
       ) : !actual ? (
         <div className="tarjeta p-8 text-center">
           <h1 className="text-xl font-extrabold">Ya viste todos los perfiles por ahora</h1>
-          <p className="mt-2 text-tinta-suave">Cada día se registran más personas. Vuelve más tarde o revisa tu agenda.</p>
+          <p className="mt-2 text-tinta-suave">Cada día se registran más personas: vuelve mañana. Si alguien te marca con ♥ y tú ya lo marcaste, aparecerá en Mi agenda.</p>
           <button className="btn-primario mt-6 w-full" onClick={() => navigate('/agenda')}>Ver mi agenda</button>
           {ultimo && <button className="btn-secundario mt-3 w-full" onClick={deshacer}>Deshacer la última decisión</button>}
         </div>
@@ -73,16 +73,21 @@ export default function Descubrir() {
           <Deslizable key={actual.id} onDecidir={decidir}>
             <TarjetaPerfil t={actual} categoria={categorias.find((c) => c.slug === actual.categoria)?.nombre} />
           </Deslizable>
+          <p className="mt-4 rounded-2xl bg-white px-4 py-3 text-center text-sm text-tinta-suave">
+            ¿Te interesa reunirte con esta persona? Toca <strong className="text-rosa">♥</strong>. Si no, toca <strong>✕</strong>. Cuando los dos toquen ♥, podrán elegir la hora.
+          </p>
           {/* espacio para que los botones fijos no tapen el final de la tarjeta */}
-          <div className="h-28" />
+          <div className="h-32" />
           <div className="fixed inset-x-0 bottom-[calc(4rem+env(safe-area-inset-bottom))] z-10 bg-gradient-to-t from-hueso via-hueso/90 to-transparent pb-3 pt-6">
             <div className="mx-auto flex max-w-md items-center justify-center gap-6">
               <button onClick={deshacer} disabled={!ultimo} aria-label="Deshacer la última decisión"
                 className="flex h-12 w-12 items-center justify-center rounded-full border border-linea bg-white text-xl text-azul shadow-suave transition active:scale-95 disabled:invisible">↶</button>
               <button onClick={() => decidir(false)} disabled={ocupado} aria-label={`No me interesa ${actual.nombre}`}
-                className="flex h-18 w-18 items-center justify-center rounded-full border border-linea bg-white text-3xl text-tinta-suave shadow-suave transition active:scale-95 disabled:opacity-50">✕</button>
+                className="flex h-20 w-20 flex-col items-center justify-center rounded-full border border-linea bg-white text-tinta-suave shadow-suave transition active:scale-95 disabled:opacity-50">
+                <span className="text-3xl leading-none">✕</span><span className="text-[11px] font-bold">No</span></button>
               <button onClick={() => decidir(true)} disabled={ocupado} aria-label={`Me interesa ${actual.nombre}`}
-                className="flex h-20 w-20 items-center justify-center rounded-full bg-rosa text-4xl text-white shadow-suave transition active:scale-95 disabled:opacity-50">♥</button>
+                className="flex h-22 w-22 flex-col items-center justify-center rounded-full bg-rosa text-white shadow-suave transition active:scale-95 disabled:opacity-50">
+                <span className="text-4xl leading-none">♥</span><span className="text-[11px] font-bold">Me interesa</span></button>
               <span className="h-12 w-12" aria-hidden="true" />
             </div>
           </div>
@@ -94,7 +99,7 @@ export default function Descubrir() {
           <div className="tarjeta w-full max-w-md p-8 text-center">
             <p className="text-5xl text-rosa" aria-hidden="true">♥</p>
             <h2 id="titulo-match" className="mt-2 text-2xl font-extrabold">¡Es un match!</h2>
-            <p className="mt-2 text-tinta-suave">A {match.nombre} también le interesa reunirse contigo. Elige un horario para la feria.</p>
+            <p className="mt-2 text-tinta-suave">{match.nombre} también quiere reunirse contigo. Ahora elijan la hora: toca el botón y verás tres opciones.</p>
             <button className="btn-primario mt-6 w-full" autoFocus onClick={() => navigate(`/match/${match.id}`)}>Elegir horario</button>
             <button className="btn-secundario mt-3 w-full" onClick={() => setMatch(null)}>Seguir descubriendo</button>
             <button className="mt-4 min-h-11 text-sm font-semibold text-tinta-suave" onClick={deshacer}>Fue un error: deshacer el ♥</button>

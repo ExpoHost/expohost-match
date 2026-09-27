@@ -31,7 +31,7 @@ export default function Participantes({ participantes, recargar }: { participant
     <div className="space-y-4">
       <div className="flex flex-wrap items-center gap-3">
         <p className="text-sm text-tinta-suave">{participantes.length} registrados · {completos.length} con perfil completo · {participantes.filter((p) => p.tipo === 'expositor').length} expositores</p>
-        <button className="btn-secundario ml-auto text-sm" onClick={exportar}>Exportar CSV</button>
+        <button className="btn-secundario ml-auto text-sm" onClick={exportar}>Descargar en Excel</button>
       </div>
       <input className="campo" placeholder="Buscar por nombre, empresa, correo…" value={busqueda} onChange={(e) => setBusqueda(e.target.value)} aria-label="Buscar participante" />
       {error && <Aviso>{error}</Aviso>}
@@ -46,15 +46,15 @@ export default function Participantes({ participantes, recargar }: { participant
               </div>
               <div className="flex items-center gap-2">
                 {p.tipo === 'expositor' ? (
-                  <span className="text-xs font-semibold text-tinta-suave">tier expositor</span>
+                  <span className="text-xs font-semibold text-tinta-suave">prioridad máxima (expositor)</span>
                 ) : (
-                  <label className="text-xs font-semibold text-tinta-suave">Tier{' '}
+                  <label className="text-xs font-semibold text-tinta-suave">Prioridad{' '}
                     <select className="campo mt-0 inline-block w-auto min-h-9 py-1 text-sm" value={p.tier} onChange={(e) => cambiar(p, { p_tier: e.target.value })} aria-label={`Tier de ${p.nombre}`}>
                       {TIERS.map((t) => <option key={t} value={t}>{t}</option>)}
                     </select>
                   </label>
                 )}
-                <button className="btn-secundario min-h-9 px-3 text-xs" onClick={() => cambiar(p, { p_activo: !p.activo })}>{p.activo ? 'Desactivar' : 'Activar'}</button>
+                <button className="btn-secundario min-h-9 px-3 text-xs" onClick={() => cambiar(p, { p_activo: !p.activo })}>{p.activo ? 'Ocultar de la app' : 'Volver a mostrar'}</button>
               </div>
             </div>
           </li>

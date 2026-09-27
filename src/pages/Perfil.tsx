@@ -45,7 +45,7 @@ export default function Perfil() {
       <Representantes />
 
       <section className="tarjeta mt-4 space-y-1 p-5 text-sm">
-        <h2 className="mb-2 text-xs font-bold uppercase tracking-wider text-tinta-suave">Solo lo ven tus matches</h2>
+        <h2 className="mb-2 text-xs font-bold uppercase tracking-wider text-tinta-suave">Tu contacto · solo lo ven las personas con quienes tengas reunión</h2>
         <p>{perfil.email}</p>
         <p>{perfil.telefono ?? 'Sin celular registrado'}</p>
       </section>

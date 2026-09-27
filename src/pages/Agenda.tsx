@@ -46,31 +46,31 @@ export default function Agenda() {
   return (
     <Pantalla nav>
       <h1 className="text-2xl font-extrabold">Mi agenda</h1>
-      <p className="mt-1 text-sm text-tinta-suave">ExpoHost Bogotá 2026 · Gimnasio Moderno. En la feria entra con tus datos móviles.</p>
+      <p className="mt-1 text-sm text-tinta-suave">Aquí están tus reuniones de la feria, con el lugar y la hora. ExpoHost Bogotá 2026 · Gimnasio Moderno.</p>
       {esEmpresa && items && items.length > 0 && (
-        <button className="btn-secundario mt-3 text-sm" onClick={exportar}>Exportar mis matches (CSV)</button>
+        <button className="btn-secundario mt-3 text-sm" onClick={exportar}>Descargar mis contactos (Excel)</button>
       )}
       {error && <div className="mt-4"><Aviso>{error}</Aviso></div>}
       {items === null && !error && <p className="mt-6 text-tinta-suave" role="status">Cargando…</p>}
 
       {items && items.length === 0 && (
         <div className="tarjeta mt-6 p-6 text-center">
-          <p className="font-bold">Aún no tienes matches</p>
-          <p className="mt-1 text-sm text-tinta-suave">Cuando a alguien que te interesa también le intereses, aparecerá aquí para agendar.</p>
-          <Link to="/descubrir" className="btn-primario mt-5 w-full">Descubrir perfiles</Link>
+          <p className="font-bold">Aún no tienes reuniones</p>
+          <p className="mt-1 text-sm text-tinta-suave">Cuando tú y otra persona se marquen con ♥, aparecerá aquí para que elijan la hora de la reunión.</p>
+          <Link to="/descubrir" className="btn-primario mt-5 w-full">Ver perfiles</Link>
         </div>
       )}
 
       {reuniones.length > 0 && (
         <section className="mt-6 space-y-3">
-          <h2 className="text-sm font-bold uppercase tracking-wider text-tinta-suave">Reuniones ({reuniones.length})</h2>
+          <h2 className="text-sm font-bold uppercase tracking-wider text-tinta-suave">Tus reuniones confirmadas ({reuniones.length})</h2>
           {reuniones.map((r) => <Reunion key={r.meeting_id} r={r} onCambio={cargar} />)}
         </section>
       )}
 
       {porAgendar.length > 0 && (
         <section className="mt-8 space-y-3">
-          <h2 className="text-sm font-bold uppercase tracking-wider text-tinta-suave">Matches por agendar ({porAgendar.length})</h2>
+          <h2 className="text-sm font-bold uppercase tracking-wider text-tinta-suave">Quieren reunirse contigo · falta elegir horario ({porAgendar.length})</h2>
           {porAgendar.map((m) => (
             <Link key={m.match_id} to={`/match/${m.match_id}`} className="tarjeta flex items-center gap-4 p-4">
               <Avatar path={m.foto_path} nombre={m.nombre} tam="h-12 w-12 text-base" />

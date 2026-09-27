@@ -44,7 +44,10 @@ function Reasignar({ r, bloques, onListo, onError }: { r: ReunionAdmin; bloques:
 
 export default function Reuniones() {
   const [todas, setTodas] = useState<ReunionAdmin[] | null>(null)
-  const [dia, setDia] = useState('2026-10-06')
+  // En la feria arranca en el día de hoy (hora de Bogotá)
+  const hoyBogota = new Date(Date.now() - 5 * 3600_000).toISOString().slice(0, 10)
+  const [dia, setDia] = useState(hoyBogota === '2026-10-07' ? '2026-10-07' : '2026-10-06')
+  const ahora = hoyBogota === dia ? new Date(Date.now() - 5 * 3600_000).toISOString().slice(11, 16) : null
   const [verCanceladas, setVerCanceladas] = useState(false)
   const [error, setError] = useState<string | null>(null)
   const [aviso, setAviso] = useState<string | null>(null)
@@ -105,7 +108,7 @@ export default function Reuniones() {
           <button key={d} onClick={() => setDia(d)} className={`min-h-11 rounded-full border px-4 text-sm font-semibold ${dia === d ? 'border-azul bg-azul text-white' : 'border-linea bg-white'}`}>{diaTexto(d)}</button>
         ))}
         <label className="ml-2 flex min-h-11 items-center gap-2 text-sm"><input type="checkbox" className="h-5 w-5 accent-azul" checked={verCanceladas} onChange={(e) => setVerCanceladas(e.target.checked)} /> Ver canceladas</label>
-        <button className="btn-secundario ml-auto text-sm" onClick={exportar}>Exportar CSV</button>
+        <button className="btn-secundario ml-auto text-sm" onClick={exportar}>Descargar en Excel</button>
         <button className="btn-secundario text-sm" disabled={enviandoAgenda} onClick={enviarAgenda}>{enviandoAgenda ? 'Enviando…' : 'Enviar correo de agenda'}</button>
       </div>
       <p className="text-sm text-tinta-suave">{activas.length} reuniones confirmadas en total · {lista.filter((r) => r.estado === 'confirmada').length} este día. Se actualiza cada 30 segundos. El correo de agenda sale solo el 5 y 6 de octubre a las 7 p.m.</p>
@@ -116,8 +119,8 @@ export default function Reuniones() {
       )}
       {bloques.length === 0 && <p className="text-sm text-tinta-suave">Sin reuniones este día.</p>}
       {bloques.map((b) => (
-        <section key={b} className="space-y-2">
-          <h2 className="text-sm font-bold uppercase tracking-wider text-tinta-suave">{hora(b)} – {horaFin(b)}</h2>
+        <section key={b} className={`space-y-2 ${ahora && hora(b) <= ahora && ahora < horaFin(b).replace(/:(\d\d)$/, (_, m) => `:${String(Number(m) + 5).padStart(2, '0')}`) ? 'rounded-[22px] bg-azul/8 p-3' : ''}`}>
+          <h2 className="text-sm font-bold uppercase tracking-wider text-tinta-suave">{hora(b)} – {horaFin(b)}{ahora && hora(b) <= ahora && ahora < horaFin(b) ? ' · ahora' : ''}</h2>
           {lista.filter((r) => r.inicio === b).map((r) => (
             <article key={r.id} className={`tarjeta p-4 ${r.estado === 'cancelada' ? 'opacity-60' : ''}`}>
               <div className="flex flex-wrap items-center justify-between gap-2">
@@ -138,9 +141,14 @@ export default function Reuniones() {
                       <p className="truncate text-xs text-tinta-suave">{p.empresa ?? ''}{p.conf ? ' · confirmó' : ''}</p>
                     </div>
                     {r.estado === 'confirmada' && (
-                      <select className="campo mt-0 w-auto min-h-9 py-1 text-sm" value={p.asis} onChange={(e) => asistencia(r, p.id, e.target.value as Asistencia)} aria-label={`Asistencia de ${p.nombre}`}>
-                        {(Object.keys(ASISTENCIA) as Asistencia[]).map((k) => <option key={k} value={k}>{ASISTENCIA[k]}</option>)}
-                      </select>
+                      <div className="flex shrink-0 gap-1" role="group" aria-label={`Asistencia de ${p.nombre}`}>
+                        {(['asistio', 'no_vino'] as Asistencia[]).map((k) => (
+                          <button key={k} onClick={() => asistencia(r, p.id, p.asis === k ? 'pendiente' : k)} aria-pressed={p.asis === k}
+                            className={`min-h-11 rounded-full border px-3 text-xs font-bold ${p.asis === k ? (k === 'asistio' ? 'border-[#006B6B] bg-turquesa/25 text-[#006B6B]' : 'border-rosa bg-rosa/10 text-[#B0103F]') : 'border-linea bg-white text-tinta-suave'}`}>
+                            {ASISTENCIA[k]}
+                          </button>
+                        ))}
+                      </div>
                     )}
                   </div>
                 ))}

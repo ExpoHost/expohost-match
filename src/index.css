@@ -14,7 +14,7 @@
   --shadow-suave: 0 6px 24px rgba(13, 13, 22, 0.07);
 }
 
-html { color-scheme: light; }
+html { color-scheme: light; font-size: 17px; }
 html, body { background: var(--color-hueso); color: var(--color-tinta); }
 body { font-family: var(--font-sans); -webkit-font-smoothing: antialiased; }
 

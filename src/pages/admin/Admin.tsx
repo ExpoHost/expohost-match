@@ -1,5 +1,5 @@
 import { useCallback, useEffect, useState } from 'react'
-import { NavLink, Navigate, Route, Routes } from 'react-router-dom'
+import { NavLink, Navigate, Route, Routes, useLocation } from 'react-router-dom'
 import { Aviso, Pantalla } from '../../components/ui'
 import { supabase } from '../../lib/supabase'
 import { mensajeError } from '../../lib/utilidades'
@@ -12,16 +12,27 @@ import Expositores from './Expositores'
 import Stands from './Stands'
 
 const TABS = [
-  { to: 'solicitudes', texto: 'Solicitudes' },
-  { to: 'participantes', texto: 'Participantes' },
+  { to: 'solicitudes', texto: 'Aprobar expositores' },
+  { to: 'participantes', texto: 'Personas' },
   { to: 'reuniones', texto: 'Reuniones' },
-  { to: 'expositores', texto: 'Cargar expositores' },
+  { to: 'expositores', texto: 'Invitar expositores' },
   { to: 'stands', texto: 'Lista de stands' },
   { to: 'ajustes', texto: 'Ajustes' },
 ]
 
+// Una frase por pestaña: qué se hace ahí
+const AYUDA: Record<string, string> = {
+  solicitudes: 'Empresas que dicen ser expositoras y esperan tu aprobación. Con stand = Expositor; sin stand = Proveedor / servicio.',
+  participantes: 'Todas las personas registradas. Busca por nombre o empresa, cambia su prioridad o escóndelas de la app.',
+  reuniones: 'Las reuniones de cada día por hora y lugar. En la feria: marca quién asistió y reasigna si hace falta.',
+  expositores: 'Crea e invita expositores por correo desde una lista. Úsalo el 1 y 2 de octubre.',
+  stands: 'La lista oficial de stands. Sirve para aprobar expositores automáticamente al registrarse.',
+  ajustes: 'Mesas de la Zona Match, bloques bloqueados, encuesta y etiquetas.',
+}
+
 // Panel de organización. Solo para admins (app_metadata.role = 'admin'); la base lo vuelve a comprobar en cada función.
 export default function Admin() {
+  const loc = useLocation()
   const [participantes, setParticipantes] = useState<Participante[] | null>(null)
   const [error, setError] = useState<string | null>(null)
 
@@ -45,7 +56,8 @@ export default function Admin() {
         ))}
       </nav>
       {error && <div className="mt-4"><Aviso>{error}</Aviso></div>}
-      <div className="mt-6">
+      <p className="mt-3 text-sm text-tinta-suave">{AYUDA[loc.pathname.split('/')[2] ?? 'solicitudes'] ?? ''}</p>
+      <div className="mt-4">
         <Routes>
           <Route index element={<Navigate to="solicitudes" replace />} />
           <Route path="solicitudes" element={<Solicitudes participantes={participantes} recargar={recargar} />} />
