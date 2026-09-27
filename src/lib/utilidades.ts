@@ -57,6 +57,7 @@ export function mensajeError(e: unknown): string {
   if (/expired|invalid.*(otp|token)|token.*(expired|invalid)/i.test(m)) return 'El código no es válido o ya venció. Pide uno nuevo.'
   if (/rate limit|security purposes|too many/i.test(m)) return 'Ya enviamos un código hace poco. Espera un minuto e inténtalo de nuevo.'
   if (/signups not allowed|user not found/i.test(m)) return 'No encontramos un perfil con ese correo. Crea tu perfil primero.'
+  if (/error sending (confirmation |magic link |recovery )?email/i.test(m)) return 'No pudimos enviar el correo. Mientras el dominio está en verificación, solo funciona management@expohost.travel. Escríbenos si necesitas ayuda.'
   if (/failed to fetch|network/i.test(m)) return 'Sin conexión. Revisa tus datos móviles e inténtalo de nuevo.'
   return m
 }

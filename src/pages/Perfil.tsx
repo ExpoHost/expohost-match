@@ -6,7 +6,7 @@ import { useSesion } from '../lib/sesion'
 import { useCatalogos } from '../lib/utilidades'
 
 export default function Perfil() {
-  const { perfil } = useSesion()
+  const { perfil, session } = useSesion()
   const { categorias } = useCatalogos()
   if (!perfil) return null
   const categoria = categorias.find((c) => c.slug === perfil.categoria)?.nombre
@@ -47,6 +47,7 @@ export default function Perfil() {
       </section>
 
       <div className="mt-6 space-y-3">
+        {session?.user.app_metadata?.role === 'admin' && <Link to="/admin" className="btn w-full bg-tinta text-white">Panel de organización</Link>}
         <Link to="/perfil/editar" className="btn-primario w-full">Editar mi perfil</Link>
         <button className="btn-secundario w-full" onClick={() => supabase.auth.signOut({ scope: 'local' })}>Cerrar sesión</button>
       </div>

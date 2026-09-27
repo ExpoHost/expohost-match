@@ -117,8 +117,8 @@ Al cerrar cada fase: resumen de lo hecho, lo pendiente y las decisiones que nece
 - [x] Fase 1 (sáb 26: landing, registro en 3 pasos con consentimiento, acceso por código o botón, perfil y edición; probado en navegador)
 - [x] Fase 2 (sáb 26: Descubrir con ♥/✕/deshacer y deslizar, match, 3 horarios, Mi agenda con contacto, WhatsApp, .ics y cancelar; Edge Function `correo-reunion` publicada, envía cuando exista RESEND_API_KEY)
 - [ ] Prueba interna sábado 26 (Lina sola con management@expohost.travel; los demás cuando esté Resend)
-- [ ] Fase 3
-- [ ] Fase 4
+- [ ] Fase 3 (pendiente: representantes por empresa, carga CSV con invitación, panel de expositor)
+- [~] Fase 4 (26-sep: panel de organización en `/admin` con solicitudes de expositor, participantes con tier/activo y CSV, reuniones por día y bloque con asistencia y cancelación, ajustes de mesas, bloques y etiquetas. Pendiente: reasignar, lista de espera, correo de agenda del día siguiente)
 - [ ] Fase 5
 - [ ] Expositores cargados (mié 30)
 - [ ] Invitaciones enviadas (jue 1 / vie 2)

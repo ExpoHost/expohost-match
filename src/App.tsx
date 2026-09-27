@@ -10,6 +10,13 @@ import Perfil from './pages/Perfil'
 import Descubrir from './pages/Descubrir'
 import Agenda from './pages/Agenda'
 import Agendar from './pages/Agendar'
+import Admin from './pages/admin/Admin'
+
+// Panel de organización: solo con rol admin en app_metadata (la base lo vuelve a comprobar)
+function SoloAdmin({ children }: { children: ReactNode }) {
+  const { session } = useSesion()
+  return session?.user.app_metadata?.role === 'admin' ? children : <Navigate to={INICIO} replace />
+}
 
 const INICIO = '/descubrir'
 
@@ -57,6 +64,7 @@ export default function App() {
           <Route path="/match/:id" element={<ConSesion><Agendar /></ConSesion>} />
           <Route path="/perfil" element={<ConSesion><Perfil /></ConSesion>} />
           <Route path="/perfil/editar" element={<ConSesion><Registro modo="editar" /></ConSesion>} />
+          <Route path="/admin/*" element={<ConSesion><SoloAdmin><Admin /></SoloAdmin></ConSesion>} />
           <Route path="*" element={<Navigate to="/" replace />} />
         </Routes>
       </HashRouter>
