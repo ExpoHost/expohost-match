@@ -49,6 +49,7 @@ export default function Reuniones() {
   const [dia, setDia] = useState(hoyBogota === '2026-10-07' ? '2026-10-07' : '2026-10-06')
   const ahora = hoyBogota === dia ? new Date(Date.now() - 5 * 3600_000).toISOString().slice(11, 16) : null
   const [verCanceladas, setVerCanceladas] = useState(false)
+  const [busqueda, setBusqueda] = useState('')
   const [error, setError] = useState<string | null>(null)
   const [aviso, setAviso] = useState<string | null>(null)
   const [enviandoAgenda, setEnviandoAgenda] = useState(false)
@@ -73,7 +74,9 @@ export default function Reuniones() {
 
   if (!todas) return <p className="text-tinta-suave" role="status">Cargando…</p>
 
-  const lista = todas.filter((r) => r.dia === dia && (verCanceladas || r.estado === 'confirmada'))
+  const q = busqueda.trim().toLowerCase()
+  const lista = todas.filter((r) => r.dia === dia && (verCanceladas || r.estado === 'confirmada')
+    && (!q || [r.a_nombre, r.b_nombre, r.a_empresa, r.b_empresa, r.stand].some((v) => v?.toLowerCase().includes(q))))
   const bloques = [...new Set(lista.map((r) => r.inicio))].sort()
   const activas = todas.filter((r) => r.estado === 'confirmada')
 
@@ -111,6 +114,7 @@ export default function Reuniones() {
         <button className="btn-secundario ml-auto text-sm" onClick={exportar}>Descargar en Excel</button>
         <button className="btn-secundario text-sm" disabled={enviandoAgenda} onClick={enviarAgenda}>{enviandoAgenda ? 'Enviando…' : 'Enviar correo de agenda'}</button>
       </div>
+      <input className="campo" placeholder="Buscar por nombre, empresa o stand (para atender el match desk)" value={busqueda} onChange={(e) => setBusqueda(e.target.value)} aria-label="Buscar reunión" />
       <p className="text-sm text-tinta-suave">{activas.length} reuniones confirmadas en total · {lista.filter((r) => r.estado === 'confirmada').length} este día. Se actualiza cada 30 segundos. El correo de agenda sale solo el 5 y 6 de octubre a las 7 p.m.</p>
       {error && <Aviso>{error}</Aviso>}
       {aviso && <Aviso tipo="ok">{aviso}</Aviso>}
