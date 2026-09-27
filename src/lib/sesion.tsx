@@ -44,8 +44,10 @@ const CLAVE_BORRADOR = 'expohost-registro'
 export const leerBorrador = (): Borrador | null => {
   try { return JSON.parse(localStorage.getItem(CLAVE_BORRADOR) ?? 'null') } catch { return null }
 }
-export const guardarBorrador = (b: Borrador) => localStorage.setItem(CLAVE_BORRADOR, JSON.stringify(b))
-export const borrarBorrador = () => localStorage.removeItem(CLAVE_BORRADOR)
+// En modo privado o en algunos navegadores dentro de apps, localStorage puede fallar: el registro
+// no depende de él (los datos también van al servidor), así que solo se ignora el error.
+export const guardarBorrador = (b: Borrador) => { try { localStorage.setItem(CLAVE_BORRADOR, JSON.stringify(b)) } catch { /* sin almacenamiento local */ } }
+export const borrarBorrador = () => { try { localStorage.removeItem(CLAVE_BORRADOR) } catch { /* sin almacenamiento local */ } }
 
 export const perfilCompleto = (p: Perfil | null) => !!p && p.busca.length + p.ofrece.length > 0
 
