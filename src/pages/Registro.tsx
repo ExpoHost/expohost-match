@@ -72,7 +72,6 @@ export default function Registro({ modo }: { modo: Modo }) {
       const c = esquemaCorreo.safeParse(datos.email)
       if (!c.success) errs.email = c.error.issues[0]!.message
     }
-    if (!datos.foto && !perfil?.foto_path) errs.foto = 'Agrega una foto de perfil'
     if (!acepta) errs.acepta = 'Para continuar debes autorizar el tratamiento de tus datos'
     setErrores(errs)
     if (Object.keys(errs).length) { setError('Revisa los campos marcados.'); return }
@@ -91,7 +90,11 @@ export default function Registro({ modo }: { modo: Modo }) {
     setEnviando(true); setError(null)
     try {
       if (modo === 'nuevo') {
-        guardarBorrador(b) // se completa al confirmar el correo (ver SesionProvider)
+        // Los datos se completan al confirmar el correo (ver SesionProvider). Se guardan en el
+        // servidor (por si el enlace se abre en otro navegador) y en este navegador (con la foto).
+        const { error } = await supabase.rpc('guardar_registro_pendiente', { p_email: b.email, p_datos: b })
+        if (error) throw error
+        guardarBorrador(b)
         await enviarCodigo()
         setCodigoEnviado(true)
       } else {
@@ -130,12 +133,12 @@ export default function Registro({ modo }: { modo: Modo }) {
         <form onSubmit={(e) => { e.preventDefault(); validarPaso1(e.currentTarget) }} className="space-y-5" noValidate>
           <h1 className="text-2xl font-extrabold">{titulo}</h1>
 
-          <p className="text-sm text-tinta-suave">Todos los datos son obligatorios: así las demás personas saben con quién se reúnen.</p>
+          <p className="text-sm text-tinta-suave">Todos los datos son obligatorios, excepto la foto. Así las demás personas saben con quién se reúnen.</p>
           <div>
             <div className="flex items-center gap-4">
               <Avatar src={b.foto} path={b.foto ? null : perfil?.foto_path} nombre={b.nombre || '?'} tam="h-20 w-20 text-2xl" />
               <label className="btn-secundario cursor-pointer text-sm">
-                {b.foto || perfil?.foto_path ? 'Cambiar foto' : 'Agregar foto'}
+                {b.foto || perfil?.foto_path ? 'Cambiar foto' : 'Agregar foto (opcional)'}
                 <input type="file" accept="image/*" className="sr-only" onChange={(e) => elegirFoto(e.target.files?.[0])} />
               </label>
             </div>

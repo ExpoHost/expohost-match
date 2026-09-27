@@ -111,8 +111,13 @@ export function SesionProvider({ children }: { children: ReactNode }) {
     setError(null)
     try {
       // Si la persona acaba de confirmar su correo, terminar el registro que dejó guardado.
-      const b = leerBorrador()
-      if (b && b.email.toLowerCase() === (s.user.email ?? '').toLowerCase()) {
+      // Primero el borrador de este navegador (trae la foto); si no hay, el guardado en el servidor
+      // (el enlace del correo pudo abrirse en otro navegador). Tomarlo del servidor lo borra.
+      const local = leerBorrador()
+      const mio = local && local.email.toLowerCase() === (s.user.email ?? '').toLowerCase() ? local : null
+      const { data: remoto } = await supabase.rpc('tomar_registro_pendiente')
+      const b = mio ?? (remoto as Borrador | null)
+      if (b) {
         borrarBorrador() // antes de guardar, para no guardarlo dos veces si esto corre en paralelo
         try { await guardarPerfil(b, true) } catch (e) { guardarBorrador(b); throw e }
       }
