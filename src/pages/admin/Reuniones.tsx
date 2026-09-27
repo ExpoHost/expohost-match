@@ -12,6 +12,8 @@ export default function Reuniones() {
   const [dia, setDia] = useState('2026-10-06')
   const [verCanceladas, setVerCanceladas] = useState(false)
   const [error, setError] = useState<string | null>(null)
+  const [aviso, setAviso] = useState<string | null>(null)
+  const [enviandoAgenda, setEnviandoAgenda] = useState(false)
 
   const cargar = useCallback(async () => {
     const { data, error } = await supabase.rpc('admin_reuniones')
@@ -39,6 +41,14 @@ export default function Reuniones() {
     avisarReunion(r.id, 'cancelada')
     cargar()
   }
+  // Correo "Tu agenda de mañana" con botón Confirmo: se envía solo el 5 y 6 de octubre a las 7 p.m.; aquí se puede forzar
+  async function enviarAgenda() {
+    if (!window.confirm(`¿Enviar ahora el correo de agenda del ${diaTexto(dia)} a todas las personas con reunión ese día?`)) return
+    setEnviandoAgenda(true); setError(null)
+    const { data, error } = await supabase.functions.invoke('correo-agenda', { body: { dia } })
+    setEnviandoAgenda(false)
+    if (error) setError(mensajeError(error)); else setAviso(data.enviado ? `Correo enviado a ${data.personas} persona(s).` : `No se envió: ${data.motivo}`)
+  }
   const exportar = () => descargarCsv('reuniones', activas.map((r) => ({
     dia: r.dia, inicio: hora(r.inicio), fin: horaFin(r.inicio), lugar: lugarTexto(r),
     persona_a: r.a_nombre, empresa_a: r.a_empresa, asistencia_a: ASISTENCIA[r.asistencia_a], confirmo_a: r.confirmo_a ? 'sí' : 'no',
@@ -53,9 +63,11 @@ export default function Reuniones() {
         ))}
         <label className="ml-2 flex min-h-11 items-center gap-2 text-sm"><input type="checkbox" className="h-5 w-5 accent-azul" checked={verCanceladas} onChange={(e) => setVerCanceladas(e.target.checked)} /> Ver canceladas</label>
         <button className="btn-secundario ml-auto text-sm" onClick={exportar}>Exportar CSV</button>
+        <button className="btn-secundario text-sm" disabled={enviandoAgenda} onClick={enviarAgenda}>{enviandoAgenda ? 'Enviando…' : 'Enviar correo de agenda'}</button>
       </div>
-      <p className="text-sm text-tinta-suave">{activas.length} reuniones confirmadas en total · {lista.filter((r) => r.estado === 'confirmada').length} este día. Se actualiza cada 30 segundos.</p>
+      <p className="text-sm text-tinta-suave">{activas.length} reuniones confirmadas en total · {lista.filter((r) => r.estado === 'confirmada').length} este día. Se actualiza cada 30 segundos. El correo de agenda sale solo el 5 y 6 de octubre a las 7 p.m.</p>
       {error && <Aviso>{error}</Aviso>}
+      {aviso && <Aviso tipo="ok">{aviso}</Aviso>}
       {bloques.length === 0 && <p className="text-sm text-tinta-suave">Sin reuniones este día.</p>}
       {bloques.map((b) => (
         <section key={b} className="space-y-2">

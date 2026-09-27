@@ -1,6 +1,7 @@
 import { useCallback, useEffect, useState } from 'react'
 import { Link, useNavigate, useParams } from 'react-router-dom'
 import { Aviso, Avatar, Pantalla } from '../components/ui'
+import { NotaLead } from '../components/NotaLead'
 import { supabase } from '../lib/supabase'
 import { descargarIcs, diaTexto, googleCalendarUrl, hora, horaFin, lugarTexto, type MiMatch, type Propuesta } from '../lib/reuniones'
 import { avisarReunion } from '../lib/correos'
@@ -100,6 +101,8 @@ export default function Agendar() {
           </div>
         </section>
       )}
+
+      <NotaLead aboutId={m.otro_id} />
 
       <section className="mt-10 border-t border-linea pt-6">
         {confirmarDeshacer ? (

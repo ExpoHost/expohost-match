@@ -1,6 +1,9 @@
 import { useCallback, useEffect, useState } from 'react'
 import { Link } from 'react-router-dom'
 import { Aviso, Avatar, Pantalla } from '../components/ui'
+import { NotaLead } from '../components/NotaLead'
+import { descargarCsv } from '../lib/csv'
+import { useSesion } from '../lib/sesion'
 import { supabase } from '../lib/supabase'
 import { avisarReunion } from '../lib/correos'
 import { descargarIcs, diaTexto, googleCalendarUrl, hora, horaFin, lugarTexto, whatsappUrl, type MiMatch } from '../lib/reuniones'
@@ -23,11 +26,30 @@ export default function Agenda() {
 
   const reuniones = items?.filter((i) => i.meeting_id) ?? []
   const porAgendar = items?.filter((i) => !i.meeting_id) ?? []
+  const { perfil } = useSesion()
+  const esEmpresa = perfil?.empresa?.tipo === 'expositor'
+
+  // Expositores y proveedores: sus matches con contacto y notas, en CSV (cada contacto queda auditado)
+  async function exportar() {
+    if (!items) return
+    const [{ data: notas }, contactos] = await Promise.all([
+      supabase.from('lead_notes').select('about_id, texto'),
+      Promise.all(items.map((m) => supabase.rpc('contacto_de', { p_user: m.otro_id }).then((r) => r.data?.[0] ?? null))),
+    ])
+    descargarCsv('mis-matches', items.map((m, i) => ({
+      nombre: m.nombre, cargo: m.cargo, empresa: m.empresa, correo: contactos[i]?.email, celular: contactos[i]?.telefono,
+      reunion: m.dia ? `${diaTexto(m.dia)} ${hora(m.inicio!)} · ${lugarTexto(m)}` : 'sin agendar',
+      notas: notas?.find((n) => n.about_id === m.otro_id)?.texto ?? '',
+    })))
+  }
 
   return (
     <Pantalla nav>
       <h1 className="text-2xl font-extrabold">Mi agenda</h1>
       <p className="mt-1 text-sm text-tinta-suave">ExpoHost Bogotá 2026 · Gimnasio Moderno. En la feria entra con tus datos móviles.</p>
+      {esEmpresa && items && items.length > 0 && (
+        <button className="btn-secundario mt-3 text-sm" onClick={exportar}>Exportar mis matches (CSV)</button>
+      )}
       {error && <div className="mt-4"><Aviso>{error}</Aviso></div>}
       {items === null && !error && <p className="mt-6 text-tinta-suave" role="status">Cargando…</p>}
 
@@ -118,6 +140,7 @@ function Reunion({ r, onCambio }: { r: MiMatch; onCambio: () => void }) {
           ? <button className="btn w-full border border-rosa bg-rosa/10 px-3 text-sm text-[#B0103F]" onClick={cancelar} disabled={cancelando}>{cancelando ? 'Cancelando…' : 'Sí, cancelar la reunión'}</button>
           : <button className="btn-secundario w-full px-3 text-sm" onClick={() => setConfirmarCancelar(true)}>Cancelar reunión</button>}
       </div>
+      <NotaLead aboutId={r.otro_id} />
       {confirmarCancelar && (
         <p className="mt-2 flex flex-wrap items-center gap-x-2 text-xs text-tinta-suave">
           <span>Se liberará el horario y le avisaremos a {r.nombre.split(' ')[0]} por correo.</span>

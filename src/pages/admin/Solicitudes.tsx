@@ -1,4 +1,4 @@
-import { useState } from 'react'
+import { useEffect, useState } from 'react'
 import { Aviso } from '../../components/ui'
 import { supabase } from '../../lib/supabase'
 import { mensajeError } from '../../lib/utilidades'
@@ -15,6 +15,14 @@ function agrupar(ps: Participante[]) {
     m.set(p.company_id, e)
   }
   return [...m.values()]
+}
+
+// Según la lista oficial, a quién pertenece el stand declarado (no se aprobó solo porque el correo no coincidió)
+function PistaStand({ stand }: { stand: string }) {
+  const [pista, setPista] = useState<string | null | undefined>(undefined)
+  useEffect(() => { supabase.rpc('admin_pista_stand', { p_stand: stand }).then(({ data }) => setPista(data ?? null)) }, [stand])
+  if (pista === undefined) return null
+  return <p className={`mt-1 text-xs font-semibold ${pista ? 'text-[#8A4500]' : 'text-tinta-suave'}`}>{pista ? `Según la lista, el stand ${stand} es de: ${pista}. El correo no coincide: revisa antes de aprobar.` : `El stand ${stand} no está en la lista oficial.`}</p>
 }
 
 export default function Solicitudes({ participantes, recargar }: { participantes: Participante[] | null; recargar: () => Promise<void> }) {
@@ -55,6 +63,7 @@ export default function Solicitudes({ participantes, recargar }: { participantes
               <ul className="mt-1 text-sm">
                 {e.personas.map((p) => <li key={p.id}>{p.nombre}{p.cargo ? ` · ${p.cargo}` : ''} · {p.email}{p.telefono ? ` · ${p.telefono}` : ''}</li>)}
               </ul>
+              {e.stand_declarado && <PistaStand stand={e.stand_declarado} />}
             </div>
             <div className="flex flex-wrap items-end gap-2">
               <label className="block text-sm"><span className="etiqueta">Stand</span>
