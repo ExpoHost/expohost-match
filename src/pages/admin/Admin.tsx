@@ -34,11 +34,12 @@ export default function Admin() {
   const pendientes = participantes?.filter((p) => p.solicitud && p.empresa_tipo !== 'expositor').length ?? 0
 
   return (
-    <Pantalla nav ancho="max-w-3xl">
+    <Pantalla nav ancho="max-w-3xl" volver="/perfil">
       <h1 className="text-2xl font-extrabold">Panel de organización</h1>
+      <p className="mt-1 text-sm text-tinta-suave">Solo lo ve la organización. Para volver a la app, usa la barra de abajo o "Volver".</p>
       <nav aria-label="Secciones del panel" className="mt-4 flex gap-2 overflow-x-auto pb-1">
         {TABS.map((t) => (
-          <NavLink key={t.to} to={t.to} className={({ isActive }) => `min-h-11 shrink-0 rounded-full border px-4 py-2 text-sm font-semibold ${isActive ? 'border-azul bg-azul text-white' : 'border-linea bg-white text-tinta'}`}>
+          <NavLink key={t.to} to={`/admin/${t.to}`} className={({ isActive }) => `min-h-11 shrink-0 rounded-full border px-4 py-2 text-sm font-semibold ${isActive ? 'border-azul bg-azul text-white' : 'border-linea bg-white text-tinta'}`}>
             {t.texto}{t.to === 'solicitudes' && pendientes > 0 ? ` (${pendientes})` : ''}
           </NavLink>
         ))}
