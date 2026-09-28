@@ -4,7 +4,7 @@ import { supabase } from '../../lib/supabase'
 import { descargarCsv } from '../../lib/csv'
 import { mensajeError } from '../../lib/utilidades'
 
-type Fila = { stand: string; empresa: string; correos: string[]; categoria: string | null }
+type Fila = { stand: string; empresa: string; correos: string[]; categoria: string | null; sin_stand: boolean }
 
 // Lista oficial de stands: empresa · stand · correos o dominios autorizados (separados por espacio o coma)
 function parsear(texto: string): Fila[] {
@@ -12,10 +12,14 @@ function parsear(texto: string): Fila[] {
   const sep = (l: string) => (l.includes('\t') ? '\t' : l.includes(';') ? ';' : ',')
   const filas = lineas.map((l) => l.split(sep(l)).map((c) => c.trim().replace(/^"|"$/g, '')))
   if (filas[0] && /empresa|stand/i.test(filas[0].join(' '))) filas.shift()
-  return filas.map((c) => ({
-    empresa: c[0] ?? '', stand: (c[1] ?? '').toUpperCase().replace(/[\s\-_.]/g, ''),
-    correos: (c[2] ?? '').split(/[\s,]+/).map((x) => x.trim().toLowerCase()).filter(Boolean), categoria: c[3]?.trim() || null,
-  })).filter((f) => f.empresa && f.stand)
+  // Si en la columna de stand se escribe "sin stand", la empresa se aprueba sola como Proveedor / servicio
+  return filas.map((c, i) => {
+    const sinStand = /^sin\s*stand$/i.test(c[1] ?? '')
+    return {
+      empresa: c[0] ?? '', stand: sinStand ? `SINSTAND${Date.now()}${i}` : (c[1] ?? '').toUpperCase().replace(/[\s\-_.]/g, ''),
+      correos: (c[2] ?? '').split(/[\s,]+/).map((x) => x.trim().toLowerCase()).filter(Boolean), categoria: c[3]?.trim() || null, sin_stand: sinStand,
+    }
+  }).filter((f) => f.empresa && f.stand)
 }
 
 export default function Stands() {
@@ -25,7 +29,7 @@ export default function Stands() {
   const [ok, setOk] = useState<string | null>(null)
 
   const cargar = useCallback(async () => {
-    const { data } = await supabase.from('stand_list').select('stand, empresa, correos, categoria').order('stand')
+    const { data } = await supabase.from('stand_list').select('stand, empresa, correos, categoria, sin_stand').order('stand')
     setLista(data ?? [])
   }, [])
   useEffect(() => { cargar() }, [cargar])
@@ -48,7 +52,7 @@ export default function Stands() {
       <section className="tarjeta space-y-3 p-5">
         <h2 className="text-lg font-extrabold">Lista oficial de stands</h2>
         <p className="text-sm text-tinta-suave">
-          Pega filas en este orden: <strong>empresa · stand · correos autorizados</strong> (uno o varios, o un dominio como <code>@empresa.com</code>) · categoría (opcional).
+          Pega filas en este orden: <strong>empresa · stand · correos autorizados</strong> (uno o varios, o un dominio como <code>@empresa.com</code>) · categoría (opcional). Si la empresa no tiene stand, escribe <code>sin stand</code> en esa columna: se aprobará sola como Proveedor / servicio.
           Quien se registre como "Expositor con stand" con un stand de esta lista y un correo autorizado queda aprobado automáticamente. Si el correo no coincide, queda pendiente y verás aquí a quién pertenece el stand.
         </p>
         <textarea className="campo min-h-32 py-3 font-mono text-sm" value={texto} onChange={(e) => setTexto(e.target.value)} placeholder={'Demo PMS Andino;A-01;laura@pmsandino.com @pmsandino.com;tecnologia\nDemo Lencería;B-07;@lenceria.co'} aria-label="Filas de stands" />
@@ -66,7 +70,7 @@ export default function Stands() {
         <ul className="space-y-1 text-sm">
           {lista.map((f) => (
             <li key={f.stand} className="flex items-center justify-between gap-2 rounded-2xl bg-white px-3 py-2">
-              <span><strong>{f.stand}</strong> · {f.empresa} <span className="text-tinta-suave">· {f.correos.join(', ') || 'sin correos (no se aprueba solo)'}</span></span>
+              <span><strong>{f.sin_stand ? 'Sin stand' : f.stand}</strong> · {f.empresa} <span className="text-tinta-suave">· {f.correos.join(', ') || 'sin correos (no se aprueba solo)'}</span></span>
               <button className="min-h-9 text-xs font-semibold text-[#B0103F]" onClick={() => borrar(f.stand)}>Quitar</button>
             </li>
           ))}
