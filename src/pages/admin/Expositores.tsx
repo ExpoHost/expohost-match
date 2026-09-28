@@ -27,14 +27,13 @@ export default function Expositores({ participantes, recargar }: { participantes
   const invalidas = filas.filter((f) => !/^[^@\s]+@[^@\s]+\.[^@\s]+$/.test(f.email) || f.empresa.length < 2)
   const invitados = participantes?.filter((p) => p.invitado) ?? []
 
-  async function enviar(soloCrear: boolean) {
+  async function enviar(modo: 'invitar' | 'crear' | 'ensayar') {
     setEnviando(true); setError(null); setResultados(null)
-    const { data, error } = await supabase.functions.invoke('invitar-expositores', { body: { filas, solo_crear: soloCrear } })
+    const { data, error } = await supabase.functions.invoke('invitar-expositores', { body: { filas, solo_crear: modo === 'crear', solo_validar: modo === 'ensayar' } })
     setEnviando(false)
     if (error) { setError(mensajeError(error)); return }
     setResultados(data.resultados)
-    setTexto('')
-    recargar()
+    if (modo !== 'ensayar') { setTexto(''); recargar() }
   }
 
   return (
@@ -63,8 +62,9 @@ export default function Expositores({ participantes, recargar }: { participantes
         {invalidas.length > 0 && <Aviso>{invalidas.length} fila(s) en rojo tienen correo o empresa inválidos y se omitirán.</Aviso>}
         {error && <Aviso>{error}</Aviso>}
         <div className="flex flex-wrap gap-2">
-          <button className="btn-primario" disabled={enviando || filas.length === 0} onClick={() => enviar(false)}>{enviando ? 'Enviando…' : `Crear e invitar por correo (${filas.length})`}</button>
-          <button className="btn-secundario" disabled={enviando || filas.length === 0} onClick={() => enviar(true)}>Solo crear, sin enviar correo</button>
+          <button className="btn-secundario" disabled={enviando || filas.length === 0} onClick={() => enviar('ensayar')}>Ensayar (no envía nada)</button>
+          <button className="btn-primario" disabled={enviando || filas.length === 0} onClick={() => { if (window.confirm(`¿Enviar ${filas.length} invitación(es) por correo ahora?`)) enviar('invitar') }}>{enviando ? 'Enviando…' : `Crear e invitar por correo (${filas.length})`}</button>
+          <button className="btn-secundario" disabled={enviando || filas.length === 0} onClick={() => enviar('crear')}>Solo crear, sin enviar correo</button>
         </div>
         {resultados && (
           <ul className="space-y-1 text-sm">

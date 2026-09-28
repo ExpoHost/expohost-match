@@ -25,11 +25,25 @@ Deno.serve(async (req) => {
   if (!user) return json({ error: 'no autenticado' }, 401)
   if (user.app_metadata?.role !== 'admin') return json({ error: 'no autorizado' }, 403)
 
-  const { filas, solo_crear } = await req.json().catch(() => ({})) as { filas?: Fila[]; solo_crear?: boolean }
+  const { filas, solo_crear, solo_validar } = await req.json().catch(() => ({})) as { filas?: Fila[]; solo_crear?: boolean; solo_validar?: boolean }
   if (!Array.isArray(filas) || filas.length === 0 || filas.length > 100) return json({ error: 'envía entre 1 y 100 filas' }, 400)
 
   const admin = createClient(url, Deno.env.get('SUPABASE_SERVICE_ROLE_KEY')!)
   const resultados: { email: string; estado: string; detalle?: string }[] = []
+
+  // Ensayo: solo dice qué pasaría con cada fila (existe el usuario, existe la empresa), sin crear ni enviar nada
+  if (solo_validar) {
+    const { data: lista } = await admin.auth.admin.listUsers({ perPage: 1000 })
+    for (const f of filas) {
+      const email = String(f.email ?? '').trim().toLowerCase()
+      const empresa = String(f.empresa ?? '').trim()
+      if (!/^[^@\s]+@[^@\s]+\.[^@\s]+$/.test(email) || empresa.length < 2) { resultados.push({ email, estado: 'omitida', detalle: 'correo o empresa inválidos' }); continue }
+      const existe = lista?.users.some((u) => u.email?.toLowerCase() === email)
+      const { data: emp } = await admin.from('companies').select('id').ilike('nombre', empresa).limit(1).maybeSingle()
+      resultados.push({ email, estado: existe ? 'ya tiene usuario: se vincularía sin correo' : 'se invitaría por correo', detalle: emp ? 'empresa existente' : 'empresa nueva' })
+    }
+    return json({ ensayo: true, resultados })
+  }
 
   for (const f of filas) {
     const email = String(f.email ?? '').trim().toLowerCase()
