@@ -55,7 +55,7 @@ export default function Perfil() {
       </div>
       <p className="mt-4 text-sm text-tinta-suave">No necesitas cerrar sesión: la app te recuerda en este celular durante la feria. Solo ciérrala si el celular no es tuyo.</p>
       <CerrarSesion />
-      <p className="mt-6 rounded-2xl bg-white px-4 py-3 text-sm text-tinta-suave">¿Necesitas ayuda? Escríbenos a <span className="font-semibold text-tinta">management@expohost.travel</span> o busca el match desk en la feria.</p>
+      <Link to="/ayuda" className="btn-secundario mt-6 w-full">Ayuda y preguntas frecuentes</Link>
       <EliminarCuenta />
       <p className="mt-6 text-center text-xs text-tinta-suave"><Link to="/privacidad" className="inline-flex min-h-11 items-center underline">Privacidad y datos personales</Link></p>
     </Pantalla>
