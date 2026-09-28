@@ -29,6 +29,19 @@ export default function Agenda() {
   const { perfil } = useSesion()
   const esEmpresa = perfil?.empresa?.tipo === 'expositor'
 
+  // Los días de feria: la siguiente reunión de hoy (hora de Bogotá) y cuánto falta
+  const proxima = (() => {
+    const bogota = new Date(Date.now() - 5 * 3600_000)
+    const hoy = bogota.toISOString().slice(0, 10)
+    if (hoy !== '2026-10-06' && hoy !== '2026-10-07') return null
+    const min = bogota.getUTCHours() * 60 + bogota.getUTCMinutes()
+    const r = reuniones.filter((x) => x.dia === hoy).map((x) => ({ x, m: Number(x.inicio!.slice(0, 2)) * 60 + Number(x.inicio!.slice(3, 5)) }))
+      .filter((y) => y.m + 25 > min).sort((a, b) => a.m - b.m)[0]
+    if (!r) return null
+    const d = r.m - min
+    return { r: r.x, falta: d <= 0 ? 'en curso' : d < 60 ? `en ${d} min` : `en ${Math.floor(d / 60)} h ${d % 60} min` }
+  })()
+
   // Expositores y proveedores: sus matches con contacto y notas, en CSV (cada contacto queda auditado)
   async function exportar() {
     if (!items) return
@@ -47,6 +60,13 @@ export default function Agenda() {
     <Pantalla nav>
       <h1 className="text-2xl font-extrabold">Mi agenda</h1>
       <p className="mt-1 text-sm text-tinta-suave">Aquí están tus reuniones de la feria, con el lugar y la hora. ExpoHost Bogotá 2026 · Gimnasio Moderno.</p>
+      {proxima && (
+        <section className="tarjeta mt-4 border-2 border-azul p-5">
+          <p className="text-xs font-bold uppercase tracking-wider text-azul">Tu próxima reunión · {proxima.falta}</p>
+          <p className="mt-1 text-2xl font-extrabold">{hora(proxima.r.inicio!)} · {lugarTexto(proxima.r)}</p>
+          <p className="text-tinta-suave">con {proxima.r.nombre}{proxima.r.empresa ? ` (${proxima.r.empresa})` : ''}</p>
+        </section>
+      )}
       {esEmpresa && items && items.length > 0 && (
         <button className="btn-secundario mt-3 text-sm" onClick={exportar}>Descargar mis contactos (Excel)</button>
       )}

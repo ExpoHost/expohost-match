@@ -30,6 +30,29 @@ const AYUDA: Record<string, string> = {
   ajustes: 'Mesas de la Zona Match, bloques bloqueados, encuesta y etiquetas.',
 }
 
+// Cifras rápidas para reportar: registrados, expositores, proveedores, matches y reuniones
+function Resumen({ participantes }: { participantes: Participante[] }) {
+  const [reuniones, setReuniones] = useState<{ total: number; d6: number; d7: number } | null>(null)
+  useEffect(() => {
+    supabase.rpc('admin_reuniones').then(({ data }) => {
+      const act = (data ?? []).filter((r: { estado: string }) => r.estado === 'confirmada')
+      setReuniones({ total: act.length, d6: act.filter((r: { dia: string }) => r.dia === '2026-10-06').length, d7: act.filter((r: { dia: string }) => r.dia === '2026-10-07').length })
+    })
+  }, [participantes])
+  const reales = participantes.filter((p) => !p.nombre.startsWith('Demo ·'))
+  const completos = reales.filter((p) => p.busca.length + p.ofrece.length > 0)
+  const cifras = [
+    ['Registrados', reales.length], ['Con perfil completo', completos.length],
+    ['Expositores', reales.filter((p) => p.tipo === 'expositor').length], ['Proveedores', reales.filter((p) => p.tipo !== 'expositor' && p.empresa_tipo === 'expositor').length],
+    ['Matches', Math.round(reales.reduce((s, p) => s + p.matches, 0) / 2)], ['Reuniones', reuniones ? `${reuniones.total} (mar ${reuniones.d6} · mié ${reuniones.d7})` : '…'],
+  ]
+  return (
+    <dl className="mt-4 grid grid-cols-2 gap-2 sm:grid-cols-3">
+      {cifras.map(([k, v]) => <div key={String(k)} className="rounded-2xl bg-white px-3 py-2"><dt className="text-xs text-tinta-suave">{k}</dt><dd className="text-lg font-extrabold">{v}</dd></div>)}
+    </dl>
+  )
+}
+
 // Panel de organización. Solo para admins (app_metadata.role = 'admin'); la base lo vuelve a comprobar en cada función.
 export default function Admin() {
   const loc = useLocation()
@@ -56,6 +79,7 @@ export default function Admin() {
         ))}
       </nav>
       {error && <div className="mt-4"><Aviso>{error}</Aviso></div>}
+      {participantes && <Resumen participantes={participantes} />}
       <p className="mt-3 text-sm text-tinta-suave">{AYUDA[loc.pathname.split('/')[2] ?? 'solicitudes'] ?? ''}</p>
       <div className="mt-4">
         <Routes>
