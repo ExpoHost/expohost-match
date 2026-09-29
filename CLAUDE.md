@@ -29,7 +29,7 @@ Dueña del producto: Lina María Roa, cofundadora de ExpoHost. Idioma de trabajo
 ## Reglas de negocio
 
 - Bloques de reunión: 30 minutos (25 de reunión + 5 de cambio). Horario 10:00–13:00 y 14:00–18:00 los dos días → 14 bloques por día, 28 en total. Desde el panel se pueden bloquear bloques concretos.
-- Lugares: (a) stand del expositor, sin tope, lugar por defecto para reuniones con expositor; (b) Zona Match: 10 mesas numeradas de 4 puestos, una reunión por mesa por bloque, para reuniones entre asistentes o cuando el expositor marca "prefiero Zona Match". El número de mesas se edita en el panel.
+- Lugares: (a) stand del expositor, sin tope, lugar por defecto para reuniones con expositor; (b) Zona Match: **8 mesas** (decisión de Lina del 29-sep; antes 10) numeradas de 4 puestos, una reunión por mesa por bloque, para reuniones entre asistentes o cuando el expositor marca "prefiero Zona Match". El número de mesas se edita en el panel.
 - Tipos de participante: `asistente` y `expositor`. Un expositor tiene número de stand y hasta 3 representantes (personas) bajo la misma empresa.
 - Tier (prioridad en feed y en mesa): `expositor`, `vip`, `diamante`, `general`. Por defecto `general`; se edita desde el panel.
 - Feed: ordenado por compatibilidad; para asistentes, expositores primero. Tope de 30 ♥ por día para asistentes y 200 para expositores.
