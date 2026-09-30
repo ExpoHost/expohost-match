@@ -18,7 +18,7 @@ async function firmar(texto: string, secreto: string) {
 Deno.serve(async (req) => {
   if (req.method === 'OPTIONS') return new Response('ok', { headers: cors })
   const url = Deno.env.get('SUPABASE_URL')!
-  const secreto = Deno.env.get('CONFIRM_SECRET') ?? Deno.env.get('SUPABASE_SERVICE_ROLE_KEY')!
+  const secreto = Deno.env.get('CONFIRM_SECRET')!
   const admin = createClient(url, Deno.env.get('SUPABASE_SERVICE_ROLE_KEY')!)
   const cronOk = !!Deno.env.get('CRON_SECRET') && req.headers.get('x-cron-secret') === Deno.env.get('CRON_SECRET')
   if (!cronOk) {
@@ -42,7 +42,7 @@ Deno.serve(async (req) => {
   for (const [uid, items] of porPersona) {
     const filasHtml = await Promise.all(items.map(async (f) => {
       const t = await firmar(`${f.meeting_id}:${uid}`, secreto)
-      const enlace = (util: boolean) => `${url}/functions/v1/responder-encuesta?m=${f.meeting_id}&u=${uid}&r=${util ? 'si' : 'no'}&t=${t}`
+      const enlace = (util: boolean) => `${APP_URL}/#/encuesta?m=${f.meeting_id}&u=${uid}&r=${util ? 'si' : 'no'}&t=${t}`
       return `<tr><td style="padding:14px 0;border-top:1px solid #E4E6F0;font-family:Montserrat,Arial,sans-serif;">
         <p style="margin:0 0 10px 0;font-size:15px;color:#0D0D16;"><strong>${esc(f.otro_nombre)}</strong> · ${DIAS[f.dia] ?? f.dia}, ${f.inicio.slice(0, 5)}</p>
         <a href="${enlace(true)}" style="display:inline-block;padding:10px 18px;border-radius:999px;background:#0049FE;color:#fff;text-decoration:none;font-weight:700;font-size:13px;margin-right:8px;">Sí, fue útil</a>

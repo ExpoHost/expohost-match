@@ -42,7 +42,7 @@ export default function Expositores({ participantes, recargar }: { participantes
         <h2 className="text-lg font-extrabold">Cargar expositores e invitarlos</h2>
         <p className="text-sm text-tinta-suave">
           Pega las filas desde Excel o un CSV, una por persona, en este orden: <strong>empresa · stand · nombre · correo · categoría</strong> (la categoría es opcional).
-          Hasta 100 filas por envío. Recuerda el tope de correos por día: envía máximo 50 hoy y el resto mañana.
+          Hasta 100 filas por envío.
         </p>
         <textarea className="campo min-h-40 py-3 font-mono text-sm" value={texto} onChange={(e) => setTexto(e.target.value)} placeholder={'Demo PMS Andino;A-01;Laura Gómez;laura@demo.com;tecnologia\nDemo Lencería;B-07;Andrés Rojas;andres@demo.com'} aria-label="Filas de expositores" />
         {filas.length > 0 && (

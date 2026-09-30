@@ -39,12 +39,13 @@ Deno.serve(async (req) => {
       const empresa = String(f.empresa ?? '').trim()
       if (!/^[^@\s]+@[^@\s]+\.[^@\s]+$/.test(email) || empresa.length < 2) { resultados.push({ email, estado: 'omitida', detalle: 'correo o empresa inválidos' }); continue }
       const existe = lista?.users.some((u) => u.email?.toLowerCase() === email)
-      const { data: emp } = await admin.from('companies').select('id').ilike('nombre', empresa).limit(1).maybeSingle()
+      const { data: emp } = await admin.from('companies').select('id').eq('tipo', 'expositor').ilike('nombre', empresa.replace(/[%_\\]/g, '\\$&')).limit(1).maybeSingle()
       resultados.push({ email, estado: existe ? 'ya tiene usuario: se vincularía sin correo' : 'se invitaría por correo', detalle: emp ? 'empresa existente' : 'empresa nueva' })
     }
     return json({ ensayo: true, resultados })
   }
 
+  const { data: listaUsuarios } = await admin.auth.admin.listUsers({ perPage: 1000 })
   for (const f of filas) {
     const email = String(f.email ?? '').trim().toLowerCase()
     const empresa = String(f.empresa ?? '').trim().slice(0, 80)
@@ -55,7 +56,7 @@ Deno.serve(async (req) => {
 
     // empresa: reutilizar por nombre (misma feria) o crear
     let companyId: string
-    const { data: existente } = await admin.from('companies').select('id').ilike('nombre', empresa).limit(1).maybeSingle()
+    const { data: existente } = await admin.from('companies').select('id').eq('tipo', 'expositor').ilike('nombre', empresa.replace(/[%_\\]/g, '\\$&')).limit(1).maybeSingle()
     if (existente) {
       companyId = existente.id
       await admin.from('companies').update({ tipo: 'expositor', stand, ...(categoria ? { categoria } : {}) }).eq('id', companyId)
@@ -66,8 +67,7 @@ Deno.serve(async (req) => {
     }
 
     // usuario: si ya existe, solo se vincula; si no, se invita por correo
-    const { data: lista } = await admin.auth.admin.listUsers({ perPage: 1000 })
-    let uid = lista?.users.find((u) => u.email?.toLowerCase() === email)?.id
+    let uid = listaUsuarios?.users.find((u) => u.email?.toLowerCase() === email)?.id
     let estado = 'vinculado'
     if (!uid) {
       if (solo_crear) {

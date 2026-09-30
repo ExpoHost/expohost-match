@@ -85,6 +85,7 @@ export default function Reuniones() {
     if (error) setError(mensajeError(error)); else cargar()
   }
   async function cancelar(r: ReunionAdmin) {
+    if (!window.confirm(`¿Cancelar la reunión de ${r.a_nombre} y ${r.b_nombre} de las ${hora(r.inicio)}? Se les avisará por correo.`)) return
     const { error } = await supabase.rpc('cancelar_reunion', { p_meeting: r.id })
     if (error) { setError(mensajeError(error)); return }
     avisarReunion(r.id, 'cancelada')
@@ -114,7 +115,7 @@ export default function Reuniones() {
         <button className="btn-secundario ml-auto text-sm" onClick={exportar}>Descargar en Excel</button>
         <button className="btn-secundario text-sm" disabled={enviandoAgenda} onClick={enviarAgenda}>{enviandoAgenda ? 'Enviando…' : 'Enviar correo de agenda'}</button>
       </div>
-      <input className="campo" placeholder="Buscar por nombre, empresa o stand (para atender el match desk)" value={busqueda} onChange={(e) => setBusqueda(e.target.value)} aria-label="Buscar reunión" />
+      <input className="campo" placeholder="Escribe el nombre de quien pregunta por su reunión" value={busqueda} onChange={(e) => setBusqueda(e.target.value)} aria-label="Buscar reunión" />
       <p className="text-sm text-tinta-suave">{activas.length} reuniones confirmadas en total · {lista.filter((r) => r.estado === 'confirmada').length} este día. Se actualiza cada 30 segundos. El correo de agenda sale solo el 5 y 6 de octubre a las 7 p.m.</p>
       {error && <Aviso>{error}</Aviso>}
       {aviso && <Aviso tipo="ok">{aviso}</Aviso>}

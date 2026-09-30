@@ -61,7 +61,7 @@ export default function Agendar() {
       <div className="flex items-center gap-4">
         <Avatar path={m.foto_path} nombre={m.nombre} />
         <div>
-          <p className="text-sm font-semibold text-rosa">Match</p>
+          <p className="text-sm font-semibold text-[#B0103F]">Interés mutuo</p>
           <h1 className="text-xl font-extrabold leading-tight">{m.nombre}</h1>
           <p className="text-sm text-tinta-suave">{[m.cargo, m.empresa].filter(Boolean).join(' · ')}</p>
         </div>
@@ -114,7 +114,7 @@ export default function Agendar() {
         {confirmarDeshacer ? (
           <div className="space-y-3">
             <p className="text-sm text-tinta-suave">
-              Se quitará el match{m.meeting_id ? ' y se cancelará la reunión' : ''}. {m.nombre.split(' ')[0]} volverá a aparecer en Descubrir y, si le das ♥ otra vez, el match se rehace.
+              Se quitará el match{m.meeting_id ? ' y se cancelará la reunión' : ''}. {m.nombre.split(' ')[0]} volverá a aparecer en Perfiles y, si le das ♥ otra vez, el match se rehace.
             </p>
             <div className="flex gap-3">
               <button className="btn-secundario flex-1" onClick={() => setConfirmarDeshacer(false)}>No, dejarlo</button>

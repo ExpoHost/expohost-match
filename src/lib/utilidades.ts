@@ -57,7 +57,7 @@ export function mensajeError(e: unknown): string {
   if (/expired|invalid.*(otp|token)|token.*(expired|invalid)/i.test(m)) return 'El código no es válido o ya venció. Pide uno nuevo.'
   if (/rate limit|security purposes|too many/i.test(m)) return 'Ya enviamos un código hace poco. Espera un minuto e inténtalo de nuevo.'
   if (/signups not allowed|user not found/i.test(m)) return 'No encontramos un perfil con ese correo. Crea tu perfil primero.'
-  if (/error sending (confirmation |magic link |recovery )?email/i.test(m)) return 'No pudimos enviar el correo. Mientras el dominio está en verificación, solo funciona management@expohost.travel. Escríbenos si necesitas ayuda.'
+  if (/error sending (confirmation |magic link |recovery )?email/i.test(m)) return 'No pudimos enviar el correo en este momento. Inténtalo en un minuto o escríbenos a management@expohost.travel.'
   if (/failed to fetch|network/i.test(m)) return 'Sin conexión. Revisa tus datos móviles e inténtalo de nuevo.'
   if (/^no autenticado|jwt|session/i.test(m)) return 'Tu sesión terminó. Entra de nuevo con tu correo.'
   if (/^no autorizado|permission denied|row-level security/i.test(m)) return 'No tienes permiso para hacer esto.'
@@ -65,5 +65,9 @@ export function mensajeError(e: unknown): string {
   if (/reunión no encontrada/i.test(m)) return 'Esta reunión ya no existe o fue cancelada.'
   if (/empresa no encontrada/i.test(m)) return 'No encontramos esa empresa.'
   if (/duplicate key|unique/i.test(m)) return 'Eso ya existe. Revisa e inténtalo de nuevo.'
-  return m
+  if (/tope de ♥/i.test(m)) return 'Ya marcaste muchas personas hoy. Mañana puedes seguir; mientras tanto revisa Mi agenda.'
+  // los mensajes escritos por la app (en español, con mayúscula inicial) se muestran; lo técnico, no
+  if (/^[A-ZÁÉÍÓÚÑ¿¡]/.test(m) && !/[{}_]|constraint|column|relation|violates|syntax|JSON/i.test(m)) return m
+  console.warn(m)
+  return 'Algo no salió bien. Inténtalo de nuevo; si sigue pasando, escríbenos a management@expohost.travel.'
 }

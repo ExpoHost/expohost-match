@@ -43,8 +43,8 @@ export default function Solicitudes({ participantes, recargar }: { participantes
   }
   const aprobar = (e: Empresa, comoProveedor: boolean) =>
     accion(e.id, () => supabase.rpc('aprobar_expositor', { p_company: e.id, p_stand: stands[e.id] ?? e.stand_declarado ?? '', p_como_proveedor: comoProveedor }))
-  const rechazar = (e: Empresa) => accion(e.id, () => supabase.rpc('rechazar_solicitud', { p_company: e.id }))
-  const quitar = (e: Empresa) => accion(e.id, () => supabase.rpc('quitar_expositor', { p_company: e.id }))
+  const rechazar = (e: Empresa) => window.confirm(`¿Rechazar la solicitud de ${e.nombre}? Seguirá en la app como asistente.`) && accion(e.id, () => supabase.rpc('rechazar_solicitud', { p_company: e.id }))
+  const quitar = (e: Empresa) => window.confirm(`¿Quitar a ${e.nombre} de los expositores? Sus personas quedarán como asistentes.`) && accion(e.id, () => supabase.rpc('quitar_expositor', { p_company: e.id }))
   const cambiarStand = (e: Empresa) => accion(e.id, () => supabase.from('companies').update({ stand: (stands[e.id] ?? e.stand ?? '').trim() || null }).eq('id', e.id).then((r) => ({ error: r.error })))
 
   return (
@@ -93,7 +93,7 @@ export default function Solicitudes({ participantes, recargar }: { participantes
               <button className="btn-secundario" disabled={ocupado === e.id} onClick={() => cambiarStand(e)}>Guardar stand</button>
               <button className="btn-secundario text-[#B0103F]" disabled={ocupado === e.id} onClick={() => quitar(e)}>Volver a asistente</button>
             </div>
-            <p className="text-xs text-tinta-suave">Con stand = Expositor (primero en el feed). Sin stand = Proveedor / servicio. Al cambiar el stand, las personas de la empresa cambian de etiqueta al instante.</p>
+            <p className="text-xs text-tinta-suave">Con stand = Expositor (primero en Perfiles). Sin stand = Proveedor / servicio. Al cambiar el stand, las personas de la empresa cambian de etiqueta al instante.</p>
           </article>
         ))}
       </section>

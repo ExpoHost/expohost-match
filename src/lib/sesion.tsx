@@ -94,6 +94,9 @@ function dataUrlABlob(dataUrl: string) {
 export async function subirFoto(blob: Blob) {
   const { data } = await supabase.auth.getUser()
   if (!data.user) throw new Error('Sin sesión')
+  // una sola foto por persona: se borran las anteriores
+  const { data: viejas } = await supabase.storage.from('fotos').list(data.user.id)
+  if (viejas?.length) await supabase.storage.from('fotos').remove(viejas.map((f) => `${data.user!.id}/${f.name}`))
   const path = `${data.user.id}/foto-${Date.now()}.jpg`
   const { error } = await supabase.storage.from('fotos').upload(path, blob, { contentType: 'image/jpeg' })
   if (error) throw error
@@ -147,10 +150,13 @@ export function SesionProvider({ children }: { children: ReactNode }) {
       const mio = local && local.email?.toLowerCase() === (s.user.email ?? '').toLowerCase() ? local : null
       const { data: remoto } = await supabase.rpc('tomar_registro_pendiente')
       // El pendiente del servidor se valida antes de aplicarlo (lo pudo escribir cualquiera con el correo)
-      const b = mio ?? (esBorrador(remoto) ? remoto : null)
-      if (b) {
+      if (mio) {
         borrarBorrador() // antes de guardar, para no guardarlo dos veces si esto corre en paralelo
-        try { await guardarPerfil(b, true) } catch (e) { if (mio) guardarBorrador(b); throw e }
+        try { await guardarPerfil(mio, true) } catch (e) { guardarBorrador(mio); throw e }
+      } else if (esBorrador(remoto)) {
+        // Lo que vino del servidor pudo escribirlo cualquiera con este correo: NO se aplica solo.
+        // Se usa para prellenar el formulario y la persona lo revisa, acepta y guarda en este navegador.
+        try { sessionStorage.setItem('expohost-prellenado', JSON.stringify({ ...remoto, foto: null, comercial: false })) } catch { /* sin almacenamiento */ }
       }
       setPerfil(await cargarPerfil(s.user.id))
     } catch (e) {

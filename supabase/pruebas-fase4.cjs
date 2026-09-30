@@ -42,8 +42,11 @@ const reg = (u, franjas) => u.cli.rpc('completar_registro', { p_nombre: 'Persona
     const f = await fetch(`${URL}/functions/v1/correo-encuesta`, { method: 'POST', headers: { Authorization: `Bearer ${AD.token}`, 'Content-Type': 'application/json' }, body: JSON.stringify({ solo: 'nadie@example.com' }) });
     const j = await f.json();
     ok(f.status === 200 && j.enviado === true && j.personas === 0, '6. correo-encuesta responde al admin (0 personas con filtro)', JSON.stringify(j));
-    const g = await fetch(`${URL}/functions/v1/responder-encuesta?m=${mt}&u=${A.id}&r=si&t=malo`);
-    ok((await g.text()).includes('no válido'), '7. responder-encuesta rechaza firma falsa');
+    const g = await fetch(`${URL}/functions/v1/responder-encuesta`, { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ m: mt, u: A.id, r: 'si', t: 'malo' }) });
+    const gj = await g.json();
+    ok(gj.ok === false && gj.motivo === 'firma', '7. responder-encuesta rechaza firma falsa');
+    const g2 = await fetch(`${URL}/functions/v1/confirmar-reunion`, { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ m: mt, u: A.id, t: 'malo' }) });
+    ok((await g2.json()).ok === false, '8. confirmar-reunion rechaza firma falsa');
   } finally {
     const { data } = await admin.auth.admin.listUsers({ perPage: 1000 });
     for (const u of data.users.filter((u) => emails.includes(u.email))) await admin.auth.admin.deleteUser(u.id);

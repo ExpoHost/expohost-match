@@ -26,6 +26,12 @@ export function EliminarCuenta() {
 
   async function eliminar() {
     setBorrando(true); setError(null)
+    // primero la foto (el almacenamiento solo se puede borrar con sesión)
+    const { data: u } = await supabase.auth.getUser()
+    if (u.user) {
+      const { data: fotos } = await supabase.storage.from('fotos').list(u.user.id)
+      if (fotos?.length) await supabase.storage.from('fotos').remove(fotos.map((f) => `${u.user!.id}/${f.name}`))
+    }
     const { error } = await supabase.rpc('eliminar_mi_cuenta')
     if (error) { setError(mensajeError(error)); setBorrando(false); return }
     await supabase.auth.signOut({ scope: 'local' })

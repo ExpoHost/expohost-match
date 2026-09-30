@@ -5,7 +5,7 @@ import { Aviso, Avatar, Chip, Pantalla } from '../components/ui'
 import { Codigo } from '../components/Codigo'
 import { supabase, urlRegreso } from '../lib/supabase'
 import { COMERCIAL_TEXTO, CONSENT_TEXTO, FRANJAS, PAISES, PARTICIPACION, POLITICA_URL, separarTelefono } from '../lib/catalogos'
-import { guardarBorrador, guardarPerfil, leerBorrador, useSesion, type Borrador, type Perfil } from '../lib/sesion'
+import { esBorrador, guardarBorrador, guardarPerfil, leerBorrador, useSesion, type Borrador, type Perfil } from '../lib/sesion'
 import { mensajeError, redimensionarFoto, useCatalogos } from '../lib/utilidades'
 
 // 'nuevo': sin sesión (pide correo al final) · 'completar': con sesión y perfil incompleto · 'editar': perfil existente
@@ -41,7 +41,11 @@ export default function Registro({ modo }: { modo: Modo }) {
   const { perfil, recargar } = useSesion()
   const navigate = useNavigate()
   const { tags, categorias } = useCatalogos()
-  const [b, setB] = useState<Borrador>(() => (perfil ? desdePerfil(perfil) : modo === 'nuevo' ? leerBorrador() ?? vacio : vacio))
+  const [prellenado] = useState<Borrador | null>(() => {
+    if (modo !== 'completar') return null
+    try { const x = JSON.parse(sessionStorage.getItem('expohost-prellenado') ?? 'null'); return esBorrador(x) ? x : null } catch { return null }
+  })
+  const [b, setB] = useState<Borrador>(() => (prellenado ? { ...prellenado, email: perfil?.email ?? prellenado.email } : perfil ? desdePerfil(perfil) : modo === 'nuevo' ? leerBorrador() ?? vacio : vacio))
   const [params, setParams] = useSearchParams()
   const paso = Math.min(3, Math.max(1, Number(params.get('paso')) || 1))
   const [acepta, setAcepta] = useState(modo === 'editar')
@@ -111,6 +115,7 @@ export default function Registro({ modo }: { modo: Modo }) {
       } else {
         await guardarPerfil(b, modo === 'completar')
         await recargar()
+        try { sessionStorage.removeItem('expohost-prellenado') } catch { /* sin almacenamiento */ }
         navigate(modo === 'editar' ? '/perfil' : '/descubrir', { replace: true })
       }
     } catch (err) { setError(mensajeError(err)) }
@@ -155,7 +160,7 @@ export default function Registro({ modo }: { modo: Modo }) {
         <form onSubmit={(e) => { e.preventDefault(); validarPaso1(e.currentTarget) }} className="space-y-5" noValidate>
           <h1 className="text-2xl font-extrabold">{titulo}</h1>
 
-          <p className="text-sm text-tinta-suave">{modo === 'editar' ? 'Cambia lo que necesites y toca Guardar al final.' : 'Son 3 pasos cortos: tus datos, qué buscas y qué ofreces, y cuándo puedes reunirte. Todo es obligatorio, excepto la foto.'}</p>
+          <p className="text-sm text-tinta-suave">{modo === 'editar' ? 'Cambia lo que necesites y toca Guardar al final.' : modo === 'completar' ? (prellenado ? 'Tu correo quedó confirmado. Revisa tus datos, acepta la autorización y toca Continuar: son 3 pasos cortos.' : 'Tu correo quedó confirmado. Para terminar, completa estos datos: son 3 pasos cortos.') : 'Son 3 pasos cortos: tus datos, qué buscas y qué ofreces, y cuándo puedes reunirte. Todo es obligatorio, excepto la foto.'}</p>
           <div>
             <div className="flex items-center gap-4">
               <Avatar src={b.foto} path={b.foto ? null : perfil?.foto_path} nombre={b.nombre || '?'} tam="h-20 w-20 text-2xl" />
@@ -178,7 +183,7 @@ export default function Registro({ modo }: { modo: Modo }) {
           {modo === 'nuevo' && (
             <label className="block"><span className="etiqueta">Correo</span>
               <input className="campo" name="email" type="email" inputMode="email" defaultValue={b.email} autoComplete="email" />
-              <span className="mt-1 block text-sm text-tinta-suave">Te enviaremos un código para entrar. Solo lo verán tus matches.</span>{err('email')}</label>
+              <span className="mt-1 block text-sm text-tinta-suave">Te enviaremos un código para entrar. Solo lo verán las personas con quienes acuerdes una reunión.</span>{err('email')}</label>
           )}
           <div>
             <span className="etiqueta" id="et-celular">Celular (WhatsApp)</span>
@@ -210,7 +215,7 @@ export default function Registro({ modo }: { modo: Modo }) {
                 ))}
                 {b.solicitud === 'expositor_stand' && (
                   <label className="block"><span className="etiqueta">Número de stand <span className="text-[#B0103F]">(obligatorio)</span></span>
-                    <input className="campo" name="stand" defaultValue={b.stand} maxLength={20} placeholder="Por ejemplo A-12" onBlur={(ev) => rellenarPorStand(ev.target.value, ev.target.form)} />
+                    <input className="campo" name="stand" defaultValue={b.stand} maxLength={20} placeholder="Por ejemplo D04" onBlur={(ev) => rellenarPorStand(ev.target.value, ev.target.form)} />
                     <span className="mt-1 block text-sm text-tinta-suave">Escribe el número tal como aparece en tu contrato de expositor. La organización lo usará para verificar tu participación.</span>{err('stand')}</label>
                 )}
               </div>

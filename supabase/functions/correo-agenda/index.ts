@@ -21,7 +21,7 @@ export async function firmar(meeting: string, user: string, secreto: string) {
 Deno.serve(async (req) => {
   if (req.method === 'OPTIONS') return new Response('ok', { headers: cors })
   const url = Deno.env.get('SUPABASE_URL')!
-  const secreto = Deno.env.get('CONFIRM_SECRET') ?? Deno.env.get('SUPABASE_SERVICE_ROLE_KEY')!
+  const secreto = Deno.env.get('CONFIRM_SECRET')!
   const admin = createClient(url, Deno.env.get('SUPABASE_SERVICE_ROLE_KEY')!)
 
   // autorización: cron (secreto compartido) o admin con sesión
@@ -67,7 +67,7 @@ Deno.serve(async (req) => {
       const lugar = r.lugar === 'stand' ? `Stand ${r.stand}` : `Zona Match · Mesa ${r.mesa}`
       const boton = confirmo
         ? `<span style="display:inline-block;padding:10px 16px;border-radius:999px;background:#E0F7F7;color:#006B6B;font-weight:700;font-size:13px;">Confirmada</span>`
-        : `<a href="${url}/functions/v1/confirmar-reunion?m=${r.id}&u=${uid}&t=${t}" style="display:inline-block;padding:10px 18px;border-radius:999px;background:#0049FE;color:#FFFFFF;text-decoration:none;font-weight:700;font-size:13px;">Confirmo</a>`
+        : `<a href="${APP_URL}/#/confirmar-reunion?m=${r.id}&u=${uid}&t=${t}" style="display:inline-block;padding:10px 18px;border-radius:999px;background:#0049FE;color:#FFFFFF;text-decoration:none;font-weight:700;font-size:13px;">Confirmo</a>`
       return `<tr><td style="padding:14px 0;border-top:1px solid #E4E6F0;font-family:Montserrat,Arial,sans-serif;">
         <p style="margin:0;font-size:16px;font-weight:800;color:#0D0D16;">${hora(r.inicio)} · ${esc(lugar)}</p>
         <p style="margin:4px 0 10px 0;font-size:14px;color:#4A4B58;">con ${esc(otroNombre)}${otroEmpresa ? ` (${esc(otroEmpresa)})` : ''}</p>${boton}</td></tr>`
