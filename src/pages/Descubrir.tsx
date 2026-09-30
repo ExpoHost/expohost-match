@@ -49,8 +49,10 @@ export default function Descubrir() {
   // Deshace la última decisión: vuelve a mostrar el perfil y, si hubo match, lo quita
   // (la otra persona conserva su ♥, así que un nuevo ♥ rehace el match).
   async function deshacer() {
-    if (!ultimo) return
+    if (!ultimo || ocupado) return
+    setOcupado(true)
     const { data, error } = await supabase.rpc('deshacer_ultimo_swipe')
+    setOcupado(false)
     if (error) { setError(mensajeError(error)); return }
     if (data) avisarReunion(data, 'cancelada')
     setMatch(null)

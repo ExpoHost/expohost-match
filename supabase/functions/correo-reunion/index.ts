@@ -86,7 +86,7 @@ Deno.serve(async (req) => {
   const match = mt?.match as unknown as { user_a: string; user_b: string } | null
   const block = mt?.block as unknown as { dia: string; inicio: string } | null
   if (!mt || !match || !block) return json({ error: 'reunión no encontrada' }, 404)
-  if (user.id !== match.user_a && user.id !== match.user_b) return json({ error: 'no autorizado' }, 403)
+  if (user.id !== match.user_a && user.id !== match.user_b && user.app_metadata?.role !== 'admin') return json({ error: 'no autorizado' }, 403)
   if (mt.estado !== tipo) return json({ error: 'el estado de la reunión no coincide' }, 409)
   // Un solo correo por reunión y por tipo (evita reenvíos repetidos y gasto del cupo de Resend)
   const columna = tipo === 'confirmada' ? 'correo_confirmacion_at' : 'correo_cancelacion_at'
@@ -128,7 +128,7 @@ Deno.serve(async (req) => {
       : {
           subject: `Reunión cancelada · ${cuando}`,
           html: html('Tu reunión fue cancelada', [
-            `${mt.cancelada_por === yo.id ? 'Cancelaste' : `${quien} canceló`} la reunión del ${cuando} en ${lugar}. El horario quedó libre.`,
+            `${mt.cancelada_por === yo.id ? 'Cancelaste' : mt.cancelada_por === otro.id ? `${quien} canceló` : 'La organización canceló'} la reunión del ${cuando} en ${lugar}. El horario quedó libre.`,
             'Si quieren verse, pueden elegir otro horario desde la app.',
           ], { texto: 'Elegir otro horario', url: `${APP_URL}/#/agenda` }),
           attachments: [],
