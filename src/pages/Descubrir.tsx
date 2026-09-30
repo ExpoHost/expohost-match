@@ -3,6 +3,7 @@ import { useNavigate } from 'react-router-dom'
 import { Aviso, Avatar, Etiquetas, Pantalla } from '../components/ui'
 import { supabase } from '../lib/supabase'
 import { avisarReunion } from '../lib/correos'
+import { AvisoLesIntereso } from '../components/LesIntereso'
 import { mensajeError, useCatalogos, useFoto } from '../lib/utilidades'
 
 type Tarjeta = {
@@ -75,6 +76,7 @@ export default function Descubrir() {
           </div>
         </div>
       )}
+      <AvisoLesIntereso />
       {error && <div className="mb-4"><Aviso>{error}</Aviso></div>}
       {cargando && !actual ? (
         <p className="py-20 text-center text-tinta-suave" role="status">Buscando perfiles compatibles…</p>

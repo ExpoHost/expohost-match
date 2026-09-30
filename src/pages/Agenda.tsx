@@ -2,6 +2,7 @@ import { useCallback, useEffect, useState } from 'react'
 import { Link } from 'react-router-dom'
 import { Aviso, Avatar, Pantalla } from '../components/ui'
 import { NotaLead } from '../components/NotaLead'
+import { LesIntereso } from '../components/LesIntereso'
 import { descargarCsv } from '../lib/csv'
 import { useSesion } from '../lib/sesion'
 import { supabase } from '../lib/supabase'
@@ -90,7 +91,7 @@ export default function Agenda() {
 
       {porAgendar.length > 0 && (
         <section className="mt-8 space-y-3">
-          <h2 className="text-sm font-bold uppercase tracking-wider text-tinta-suave">Quieren reunirse contigo · falta elegir horario ({porAgendar.length})</h2>
+          <h2 className="text-sm font-bold uppercase tracking-wider text-tinta-suave">Interés mutuo · falta elegir la hora ({porAgendar.length})</h2>
           {porAgendar.map((m) => (
             <Link key={m.match_id} to={`/match/${m.match_id}`} className="tarjeta flex items-center gap-4 p-4">
               <Avatar path={m.foto_path} nombre={m.nombre} tam="h-12 w-12 text-base" />
@@ -103,6 +104,7 @@ export default function Agenda() {
           ))}
         </section>
       )}
+      <LesIntereso />
     </Pantalla>
   )
 }
