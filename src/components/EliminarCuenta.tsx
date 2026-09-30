@@ -6,7 +6,7 @@ import { Aviso } from './ui'
 // Cerrar sesión con aviso: sin contraseñas, volver a entrar exige un código nuevo
 export function CerrarSesion() {
   const [confirmar, setConfirmar] = useState(false)
-  if (!confirmar) return <button className="mt-2 min-h-11 text-sm font-semibold text-tinta-suave" onClick={() => setConfirmar(true)}>Cerrar sesión en este celular</button>
+  if (!confirmar) return <button className="mt-2 block min-h-11 text-sm font-semibold text-tinta-suave" onClick={() => setConfirmar(true)}>Cerrar sesión en este celular</button>
   return (
     <div className="mt-2 space-y-3 rounded-2xl bg-white p-4">
       <p className="text-sm text-tinta-suave">Para volver a entrar tendrás que pedir un código nuevo a tu correo. ¿Seguro?</p>
