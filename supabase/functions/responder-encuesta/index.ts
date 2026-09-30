@@ -1,7 +1,7 @@
 // Edge Function: respuesta de la encuesta T+1 desde el correo. GET ?m=<reunión>&u=<persona>&r=si|no&t=<firma>
 import { createClient } from 'npm:@supabase/supabase-js@2'
 
-const APP_URL = Deno.env.get('APP_URL') ?? 'https://expohost.github.io/expohost-match'
+const APP_URL = Deno.env.get('APP_URL') ?? 'https://match.expohost.travel'
 async function firmar(texto: string, secreto: string) {
   const key = await crypto.subtle.importKey('raw', new TextEncoder().encode(secreto), { name: 'HMAC', hash: 'SHA-256' }, false, ['sign'])
   const sig = await crypto.subtle.sign('HMAC', key, new TextEncoder().encode(texto))

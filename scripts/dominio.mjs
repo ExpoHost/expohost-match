@@ -7,7 +7,7 @@ import { readFileSync } from 'node:fs'
 
 const REF = 'ujfhvhoutlqphbpwrgfq'
 const NUEVA = 'https://match.expohost.travel'
-const VIEJA = 'https://expohost.github.io/expohost-match'
+const VIEJA = 'https://expohost.github.io/expohost-match' // los archivos ya usan la nueva; el reemplazo es inofensivo
 const SBP = process.env.SBP
 if (!SBP) { console.error('Falta SBP (token de acceso de Supabase)'); process.exit(1) }
 const api = (path, body) => fetch(`https://api.supabase.com/v1/projects/${REF}${path}`, {

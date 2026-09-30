@@ -4,7 +4,7 @@ import { createClient } from 'npm:@supabase/supabase-js@2'
 
 const cors = { 'Access-Control-Allow-Origin': '*', 'Access-Control-Allow-Headers': 'authorization, x-client-info, apikey, content-type, x-cron-secret' }
 const json = (body: unknown, status = 200) => new Response(JSON.stringify(body), { status, headers: { ...cors, 'Content-Type': 'application/json' } })
-const APP_URL = Deno.env.get('APP_URL') ?? 'https://expohost.github.io/expohost-match'
+const APP_URL = Deno.env.get('APP_URL') ?? 'https://match.expohost.travel'
 const FROM = Deno.env.get('RESEND_FROM') ?? 'Expohost Match <match@match.expohost.travel>'
 const DIAS: Record<string, string> = { '2026-10-06': 'martes 6', '2026-10-07': 'miércoles 7' }
 const esc = (s: string) => s.replace(/[&<>"]/g, (c) => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;' })[c]!)

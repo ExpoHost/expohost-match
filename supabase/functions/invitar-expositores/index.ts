@@ -11,7 +11,7 @@ const cors = {
 const json = (body: unknown, status = 200) =>
   new Response(JSON.stringify(body), { status, headers: { ...cors, 'Content-Type': 'application/json' } })
 
-const APP_URL = Deno.env.get('APP_URL') ?? 'https://expohost.github.io/expohost-match'
+const APP_URL = Deno.env.get('APP_URL') ?? 'https://match.expohost.travel'
 
 type Fila = { empresa: string; stand?: string; nombre: string; email: string; categoria?: string }
 
