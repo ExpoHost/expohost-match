@@ -47,6 +47,21 @@ const reg = (u, franjas) => u.cli.rpc('completar_registro', { p_nombre: 'Persona
     ok(gj.ok === false && gj.motivo === 'firma', '7. responder-encuesta rechaza firma falsa');
     const g2 = await fetch(`${URL}/functions/v1/confirmar-reunion`, { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ m: mt, u: A.id, t: 'malo' }) });
     ok((await g2.json()).ok === false, '8. confirmar-reunion rechaza firma falsa');
+    // Cambiar la hora: la app propone todas las horas libres para ambos y el participante elige
+    const ops = (await B.cli.rpc('propuestas', { p_match: match, p_limite: 28 })).data;
+    ok(ops.length > 3 && !ops.some((o) => o.block_id === otro), '9. Opciones para cambiar la hora: todas las libres, sin la actual', String(ops.length));
+    const destino = ops[ops.length - 1].block_id;
+    const r9 = await B.cli.rpc('reagendar_reunion', { p_meeting: mt, p_block: destino });
+    const { data: m9 } = await admin.from('meetings').select('block_id, cambiada_por, correo_confirmacion_at, estado').eq('id', mt).single();
+    const { data: mp9 } = await admin.from('meeting_participants').select('block_id').eq('meeting_id', mt);
+    ok(!r9.error && m9.block_id === destino && m9.cambiada_por === B.id && m9.estado === 'confirmada' && m9.correo_confirmacion_at === null && mp9.every((x) => x.block_id === destino), '10. Un participante cambia la hora de su reunión', r9.error?.message);
+    const r10 = await C.cli.rpc('reagendar_reunion', { p_meeting: mt, p_block: ops[0].block_id });
+    ok(!!r10.error, '11. Quien no es de la reunión no puede cambiarla', r10.error?.message);
+    const r11 = await A.cli.rpc('reagendar_reunion', { p_meeting: mt, p_block: 9999 });
+    ok(!!r11.error, '12. Una hora que no está libre se rechaza', r11.error?.message);
+    await A.cli.rpc('reagendar_reunion', { p_meeting: mt, p_block: ops[0].block_id }); await A.cli.rpc('reagendar_reunion', { p_meeting: mt, p_block: ops[1].block_id });
+    const r13 = await A.cli.rpc('reagendar_reunion', { p_meeting: mt, p_block: ops[2].block_id });
+    ok(/varias veces/.test(r13.error?.message ?? ''), '13. Tope de 3 cambios de hora por reunión al día', r13.error?.message);
   } finally {
     const { data } = await admin.auth.admin.listUsers({ perPage: 1000 });
     for (const u of data.users.filter((u) => emails.includes(u.email))) await admin.auth.admin.deleteUser(u.id);

@@ -50,7 +50,7 @@ Deno.serve(async (req) => {
   for (const r of (reuniones as R[])) {
     for (const lado of ['a', 'b'] as const) {
       const id = r[`${lado}_id`], email = r[`${lado}_email`]
-      if (!email || email.endsWith('@expohost.invalid')) continue
+      if (!email || /@(expohost\.invalid|example\.com)$/i.test(email)) continue  // anonimizados, demos y pruebas no reciben correo
       if (body.solo && email !== body.solo.toLowerCase()) continue
       const otro = lado === 'a' ? 'b' : 'a'
       const p = porPersona.get(id) ?? { email, nombre: r[`${lado}_nombre`], items: [] }

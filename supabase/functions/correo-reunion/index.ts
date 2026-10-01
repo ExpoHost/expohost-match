@@ -1,5 +1,6 @@
-// Edge Function: correo de confirmación (con .ics) o de cancelación de una reunión, a ambas personas.
-// La llama la app justo después de reservar_reunion / cancelar_reunion. Solo un participante
+// Edge Function: correo de confirmación (con .ics), de cambio de hora o de cancelación de una reunión, a ambas personas.
+// La llama la app justo después de reservar_reunion / reagendar_reunion / admin_reasignar / cancelar_reunion.
+// Si la reunión tiene `cambiada_por`, el correo de confirmación dice que cambió de hora y quién la cambió. Solo un participante
 // de la reunión puede pedir el envío. Sin RESEND_API_KEY no envía nada (responde 200 y lo dice).
 import { createClient } from 'npm:@supabase/supabase-js@2'
 
@@ -28,17 +29,18 @@ type Reunion = { id: string; estado: string; lugar: string; mesa: number | null;
 const lugarTexto = (r: Reunion) => (r.lugar === 'stand' ? `Stand ${r.stand}` : `Zona Match · Mesa ${r.mesa}`)
 
 // Bogotá es UTC-5 todo el año
-function ics(r: Reunion, otro: Persona) {
+function ics(r: Reunion, otro: Persona, secuencia = 0) {
   const utc = (t: string) => {
     const [h, m] = t.split(':').map(Number)
     return `${r.dia.replaceAll('-', '')}T${String(h + 5).padStart(2, '0')}${String(m).padStart(2, '0')}00Z`
   }
-  const e = (s: string) => s.replace(/[\\;,]/g, (c) => '\\' + c)
+  const e = (s: string) => s.replace(/[\\;,]/g, (c) => '\\' + c).replace(/\r?\n/g, ' ')
   return [
     'BEGIN:VCALENDAR', 'VERSION:2.0', 'PRODID:-//Expohost//Match//ES', 'CALSCALE:GREGORIAN', 'METHOD:PUBLISH',
     'BEGIN:VEVENT',
     `UID:${r.id}@match.expohost.travel`,
     `DTSTAMP:${new Date().toISOString().replace(/[-:]/g, '').slice(0, 15)}Z`,
+    `SEQUENCE:${secuencia}`,
     `DTSTART:${utc(r.inicio)}`, `DTEND:${utc(horaFin(r.inicio))}`,
     `SUMMARY:${e(`Reunión con ${otro.nombre}${otro.empresa ? ` (${otro.empresa})` : ''} · Expohost Match`)}`,
     `LOCATION:${e(`${lugarTexto(r)} · ExpoHost Bogotá 2026 · Gimnasio Moderno`)}`,
@@ -81,7 +83,7 @@ Deno.serve(async (req) => {
 
   const admin = createClient(url, Deno.env.get('SUPABASE_SERVICE_ROLE_KEY')!)
   const { data: mt } = await admin.from('meetings')
-    .select('id, estado, lugar, mesa, stand, cancelada_por, correo_confirmacion_at, correo_cancelacion_at, match:matches(user_a, user_b), block:blocks(dia, inicio)')
+    .select('id, estado, lugar, mesa, stand, cancelada_por, cambiada_por, correo_confirmacion_at, correo_cancelacion_at, match:matches(user_a, user_b), block:blocks(dia, inicio)')
     .eq('id', meeting_id).maybeSingle()
   const match = mt?.match as unknown as { user_a: string; user_b: string } | null
   const block = mt?.block as unknown as { dia: string; inicio: string } | null
@@ -113,14 +115,25 @@ Deno.serve(async (req) => {
   const resultados = []
   for (const yo of personas) {
     const otro = personas.find((p) => p.id !== yo.id)!
-    if (!yo.email || yo.email.endsWith('@expohost.invalid')) continue
+    if (!yo.email || /@(expohost\.invalid|example\.com)$/i.test(yo.email)) continue  // anonimizados, demos y pruebas no reciben correo
     const quien = `<strong style="color:#0D0D16;">${esc(otro.nombre)}</strong>${otro.empresa ? ` (${esc(otro.empresa)})` : ''}`
-    const correo = tipo === 'confirmada'
+    const cambio = mt.cambiada_por as string | null
+    const correo = tipo === 'confirmada' && cambio
+      ? {
+          subject: `Tu reunión cambió de hora · ${cuando} · ${lugarTexto(reunion)}`,
+          html: html('Tu reunión cambió de hora', [
+            `${cambio === yo.id ? `Cambiaste la reunión con ${quien}` : cambio === otro.id ? `${quien} cambió la reunión contigo` : `La organización cambió tu reunión con ${quien}`}. Esta es la nueva hora y el lugar:`,
+            'La hora anterior ya no aplica. Si esta no te sirve, puedes cambiarla o cancelarla desde Mi agenda. El archivo adjunto actualiza la reunión en tu calendario.',
+          ], { texto: 'Ver mi agenda', url: `${APP_URL}/#/agenda` }, [cuando, lugar, 'Gimnasio Moderno, Bogotá']),
+          attachments: [{ filename: 'reunion-expohost.ics', content: btoa(unescape(encodeURIComponent(ics(reunion, otro, Math.floor(Date.now() / 1000))))) }],
+          texto: `Tu reunión con ${otro.nombre} cambió de hora. Nueva hora: ${cuando}, ${lugarTexto(reunion)}. Agenda: ${APP_URL}/#/agenda`,
+        }
+      : tipo === 'confirmada'
       ? {
           subject: `Reunión confirmada · ${cuando} · ${lugarTexto(reunion)}`,
           html: html('Tu reunión quedó confirmada', [
             `Tienes una reunión con ${quien} en ExpoHost Bogotá 2026. Llega 5 minutos antes al lugar indicado.`,
-            'Si no puedes ir, cancélala desde la app para liberar el espacio. El archivo adjunto agrega la reunión a tu calendario.',
+            'Si no puedes ir, cámbiale la hora o cancélala desde la app para liberar el espacio. El archivo adjunto agrega la reunión a tu calendario.',
           ], { texto: 'Ver mi agenda', url: `${APP_URL}/#/agenda` }, [cuando, lugar, 'Gimnasio Moderno, Bogotá']),
           attachments: [{ filename: 'reunion-expohost.ics', content: btoa(unescape(encodeURIComponent(ics(reunion, otro)))) }],
           texto: `Reunión confirmada con ${otro.nombre}: ${cuando}, ${lugarTexto(reunion)}. Agenda: ${APP_URL}/#/agenda`,

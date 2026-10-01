@@ -37,7 +37,7 @@ function Reasignar({ r, bloques, onListo, onError }: { r: ReunionAdmin; bloques:
         ? <label className="text-xs font-semibold text-tinta-suave">Mesa<input className="campo mt-0 block min-h-9 w-20 py-1 text-sm" type="number" min={1} value={mesa} onChange={(e) => setMesa(e.target.value)} /></label>
         : <label className="text-xs font-semibold text-tinta-suave">Stand<input className="campo mt-0 block min-h-9 w-24 py-1 text-sm" value={stand} onChange={(e) => setStand(e.target.value)} maxLength={20} /></label>}
       <button className="btn-primario min-h-9 px-4 text-sm" disabled={ocupado} onClick={guardar}>Guardar</button>
-      <p className="w-full text-xs text-tinta-suave">Se envía un correo nuevo de confirmación a las dos personas.</p>
+      <p className="w-full text-xs text-tinta-suave">Las dos personas reciben un correo con la nueva hora y el lugar.</p>
     </div>
   )
 }

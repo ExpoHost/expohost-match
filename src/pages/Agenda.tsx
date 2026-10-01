@@ -7,7 +7,7 @@ import { descargarCsv } from '../lib/csv'
 import { useSesion } from '../lib/sesion'
 import { supabase } from '../lib/supabase'
 import { avisarReunion } from '../lib/correos'
-import { descargarIcs, diaTexto, googleCalendarUrl, hora, horaFin, lugarTexto, whatsappUrl, type MiMatch } from '../lib/reuniones'
+import { descargarIcs, diaTexto, googleCalendarUrl, hora, horaFin, lugarTexto, whatsappUrl, type MiMatch, type Propuesta } from '../lib/reuniones'
 import { mensajeError } from '../lib/utilidades'
 
 export default function Agenda() {
@@ -114,6 +114,8 @@ function Reunion({ r, onCambio }: { r: MiMatch; onCambio: () => void }) {
   const [confirmarCancelar, setConfirmarCancelar] = useState(false)
   const [cancelando, setCancelando] = useState(false)
   const [error, setError] = useState<string | null>(null)
+  const [cambiando, setCambiando] = useState(false)
+  const [cambiada, setCambiada] = useState(false)
 
   async function verContacto() {
     const { data, error } = await supabase.rpc('contacto_de', { p_user: r.otro_id })
@@ -157,11 +159,19 @@ function Reunion({ r, onCambio }: { r: MiMatch; onCambio: () => void }) {
         <a href={googleCalendarUrl({ ...r, dia: r.dia!, inicio: r.inicio! })} target="_blank" rel="noopener noreferrer" className="btn-secundario px-3 text-sm">Google Calendar</a>
         <button className="btn-secundario px-3 text-sm" onClick={() => descargarIcs({ ...r, meeting_id: r.meeting_id!, dia: r.dia!, inicio: r.inicio! })}>Otro calendario (.ics)</button>
       </div>
-      <div className="mt-2">
-        {confirmarCancelar
-          ? <button className="btn w-full border border-rosa bg-rosa/10 px-3 text-sm text-[#B0103F]" onClick={cancelar} disabled={cancelando}>{cancelando ? 'Cancelando…' : 'Sí, cancelar la reunión'}</button>
-          : <button className="btn-secundario w-full px-3 text-sm" onClick={() => setConfirmarCancelar(true)}>Cancelar reunión</button>}
-      </div>
+      {cambiada && <div className="mt-3"><Aviso tipo="ok">Listo, la reunión quedó en la nueva hora. Le avisamos a {r.nombre.split(' ')[0]} por correo.</Aviso></div>}
+      {cambiando ? (
+        <CambiarHora r={r} onCerrar={() => setCambiando(false)} onListo={() => { setCambiando(false); setCambiada(true); onCambio() }} />
+      ) : confirmarCancelar ? (
+        <div className="mt-2">
+          <button className="btn w-full border border-rosa bg-rosa/10 px-3 text-sm text-[#B0103F]" onClick={cancelar} disabled={cancelando}>{cancelando ? 'Cancelando…' : 'Sí, cancelar la reunión'}</button>
+        </div>
+      ) : (
+        <div className="mt-2 grid grid-cols-2 gap-2">
+          <button className="btn-secundario px-3 text-sm" onClick={() => { setCambiada(false); setError(null); setCambiando(true) }}>Cambiar la hora</button>
+          <button className="btn-secundario px-3 text-sm" onClick={() => setConfirmarCancelar(true)}>Cancelar reunión</button>
+        </div>
+      )}
       <NotaLead aboutId={r.otro_id} />
       {confirmarCancelar && (
         <p className="mt-2 flex flex-wrap items-center gap-x-2 text-xs text-tinta-suave">
@@ -170,5 +180,63 @@ function Reunion({ r, onCambio }: { r: MiMatch; onCambio: () => void }) {
         </p>
       )}
     </article>
+  )
+}
+
+// Cambiar la hora de una reunión confirmada: la app propone las horas en que los dos están libres
+// y la persona elige una. Nada cambia hasta que toca el botón de confirmar.
+function CambiarHora({ r, onCerrar, onListo }: { r: MiMatch; onCerrar: () => void; onListo: () => void }) {
+  const [opciones, setOpciones] = useState<Propuesta[] | null>(null)
+  const [elegida, setElegida] = useState<Propuesta | null>(null)
+  const [guardando, setGuardando] = useState(false)
+  const [error, setError] = useState<string | null>(null)
+
+  const cargar = useCallback(async () => {
+    const { data, error } = await supabase.rpc('propuestas', { p_match: r.match_id, p_limite: 28 })
+    if (error) { setError(mensajeError(error)); setOpciones([]) } else setOpciones(data)
+  }, [r.match_id])
+  useEffect(() => { cargar() }, [cargar])
+
+  async function guardar() {
+    if (!elegida || guardando) return
+    setGuardando(true); setError(null)
+    const { error } = await supabase.rpc('reagendar_reunion', { p_meeting: r.meeting_id, p_block: elegida.block_id })
+    setGuardando(false)
+    if (error) { setError(mensajeError(error)); setElegida(null); cargar(); return } // la hora se ocupó: nuevas opciones
+    avisarReunion(r.meeting_id!, 'confirmada')
+    onListo()
+  }
+
+  const dias = [...new Set((opciones ?? []).map((o) => o.dia))]
+  return (
+    <div className="mt-3 rounded-2xl bg-hueso p-4">
+      <p className="font-bold">Elige la nueva hora</p>
+      <p className="mt-1 text-sm text-tinta-suave">Estas son las horas en que {r.nombre.split(' ')[0]} y tú están libres. Toca la que prefieras.</p>
+      {error && <div className="mt-3"><Aviso>{error}</Aviso></div>}
+      {opciones === null && <p className="mt-3 text-sm text-tinta-suave" role="status">Buscando horas libres…</p>}
+      {opciones?.length === 0 && !error && (
+        <div className="mt-3"><Aviso tipo="info">No hay otra hora en que los dos estén libres. Puedes dejar la reunión como está o cancelarla.</Aviso></div>
+      )}
+      {dias.map((d) => (
+        <div key={d} className="mt-3">
+          <p className="text-xs font-bold uppercase tracking-wider text-tinta-suave">{diaTexto(d)}</p>
+          <div className="mt-2 grid grid-cols-3 gap-2">
+            {opciones!.filter((o) => o.dia === d).map((o) => (
+              <button key={o.block_id} onClick={() => setElegida(o)} aria-pressed={elegida?.block_id === o.block_id}
+                className={`min-h-11 rounded-full border text-sm font-bold ${elegida?.block_id === o.block_id ? 'border-azul bg-azul text-white' : 'border-linea bg-white text-tinta'}`}>
+                {hora(o.inicio)}
+              </button>
+            ))}
+          </div>
+        </div>
+      ))}
+      {elegida && (
+        <div className="mt-4">
+          <p className="text-sm">Nueva hora: <strong>{diaTexto(elegida.dia)}, {hora(elegida.inicio)} – {horaFin(elegida.inicio)}</strong> · {lugarTexto(elegida)}</p>
+          <button className="btn-primario mt-3 w-full" onClick={guardar} disabled={guardando}>{guardando ? 'Cambiando…' : 'Confirmar el cambio'}</button>
+        </div>
+      )}
+      <button className="mt-2 min-h-11 w-full text-sm font-semibold text-tinta-suave" onClick={onCerrar}>No cambiar</button>
+    </div>
   )
 }

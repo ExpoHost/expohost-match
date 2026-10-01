@@ -36,6 +36,7 @@ Deno.serve(async (req) => {
   const porPersona = new Map<string, F[]>()
   for (const f of (filas as F[])) {
     if (body.solo && f.email !== body.solo.toLowerCase()) continue
+    if (!f.email || /@(expohost\.invalid|example\.com)$/i.test(f.email)) continue  // anonimizados, demos y pruebas no reciben correo
     porPersona.set(f.user_id, [...(porPersona.get(f.user_id) ?? []), f])
   }
   const resultados: { email: string; ok: boolean }[] = []
