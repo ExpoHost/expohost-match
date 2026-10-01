@@ -6,7 +6,7 @@ export type Participante = {
   stand: string | null; solicitud: string | null; stand_declarado: string | null
   busca: string[]; ofrece: string[]; franjas: string[]; foto_path: string | null; created_at: string
   matches: number; reuniones: number
-  entro: boolean; sacado: boolean; es_admin: boolean
+  entro: boolean; sacado: boolean; es_admin: boolean; recordatorio_at: string | null
 }
 
 export type ReunionAdmin = {
@@ -40,7 +40,7 @@ export function estadoPersona(p: Pick<Participante, 'activo' | 'sacado' | 'invit
 export const ESTADOS: Record<Estado, { texto: string; clase: string }> = {
   completo: { texto: 'Perfil completo', clase: 'bg-turquesa/20 text-[#006B6B]' },
   invitado: { texto: 'Invitado · no ha entrado', clase: 'bg-naranja/20 text-[#8A4500]' },
-  sin_terminar: { texto: 'Entró, pero no terminó su perfil', clase: 'bg-linea text-tinta-suave' },
+  sin_terminar: { texto: 'Empezó, pero no terminó su perfil', clase: 'bg-linea text-tinta-suave' },
   fuera: { texto: 'Fuera de la app', clase: 'bg-rosa/15 text-[#B0103F]' },
 }
 export const esEmpresaExpositora = (p: Pick<Participante, 'empresa_tipo'>) => p.empresa_tipo === 'expositor'

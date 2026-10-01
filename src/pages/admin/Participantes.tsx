@@ -10,7 +10,7 @@ type Filtro = Estado | 'todos'
 const FILTROS: { id: Filtro; texto: string; ayuda: string }[] = [
   { id: 'completo', texto: 'Ya tienen perfil', ayuda: 'Personas que terminaron su registro. Ya aparecen en la app y pueden agendar reuniones.' },
   { id: 'invitado', texto: 'Invitados sin entrar', ayuda: 'Les llegó la invitación por correo pero todavía no han entrado. Nadie los ve en la app.' },
-  { id: 'sin_terminar', texto: 'Sin terminar', ayuda: 'Entraron con su correo pero no terminaron de llenar el perfil. Nadie los ve en la app hasta que lo terminen.' },
+  { id: 'sin_terminar', texto: 'Sin terminar', ayuda: 'Empezaron su registro pero no terminaron el perfil. Nadie los ve en la app hasta que lo terminen. A los 45 minutos les llega solo un correo para que lo retomen; también se lo puedes enviar tú.' },
   { id: 'fuera', texto: 'Fuera de la app', ayuda: 'Personas que la organización sacó. No pueden entrar y nadie las ve. Sus datos se conservan y se pueden volver a admitir.' },
   { id: 'todos', texto: 'Todos', ayuda: 'Todas las personas, en cualquier estado.' },
 ]
@@ -55,6 +55,15 @@ export default function Participantes({ participantes, recargar }: { participant
     if (error) { setError(mensajeError(error)); return }
     setAviso(`${p.nombre} puede volver a entrar a la app con su correo.`)
     await recargar()
+  }
+
+  async function recordar(p: Participante) {
+    setOcupado(p.id); setError(null); setAviso(null)
+    const { data, error } = await supabase.functions.invoke('correo-recordatorio', { body: { user_id: p.id } })
+    setOcupado(null)
+    if (error) { setError(mensajeError(error)); return }
+    if (data?.enviado && data.personas > 0) { setAviso(`Le enviamos el recordatorio a ${p.email}.`); await recargar() }
+    else setError(`No se envió el recordatorio a ${p.email}${data?.motivo ? `: ${data.motivo}` : '.'}`)
   }
 
   async function reenviar(p: Participante) {
@@ -109,7 +118,8 @@ export default function Participantes({ participantes, recargar }: { participant
                     {p.es_admin && <span className="text-tinta-suave">Organización</span>}
                   </p>
                   <p className="mt-1 text-xs text-tinta-suave">
-                    {estado === 'completo' ? `${p.matches} matches · ${p.reuniones} reuniones · ` : ''}{p.invitado ? 'Invitado' : 'Se registró'} el {fecha(p.created_at)}
+                    {estado === 'completo' ? `${p.matches} matches · ${p.reuniones} reuniones · ` : ''}{p.invitado ? 'Invitado' : estado === 'sin_terminar' ? 'Empezó' : 'Se registró'} el {fecha(p.created_at)}
+                    {estado === 'sin_terminar' && (p.recordatorio_at ? ` · Recordatorio enviado el ${fecha(p.recordatorio_at)}` : ' · Aún sin recordatorio')}
                   </p>
                 </div>
                 <div className="flex flex-wrap items-center gap-2">
@@ -121,6 +131,7 @@ export default function Participantes({ participantes, recargar }: { participant
                     </label>
                   )}
                   {estado === 'invitado' && <button className="btn-secundario min-h-11 px-4 text-sm" disabled={ocupado === p.id} onClick={() => reenviar(p)}>{ocupado === p.id ? 'Enviando…' : 'Reenviar invitación'}</button>}
+                  {estado === 'sin_terminar' && <button className="btn-secundario min-h-11 px-4 text-sm" disabled={ocupado === p.id} onClick={() => recordar(p)}>{ocupado === p.id ? 'Enviando…' : p.recordatorio_at ? 'Enviar otro recordatorio' : 'Enviar recordatorio'}</button>}
                   {estado === 'fuera'
                     ? <button className="btn-secundario min-h-11 px-4 text-sm" disabled={ocupado === p.id} onClick={() => admitir(p)}>Volver a admitir</button>
                     : !p.es_admin && <button className="btn-secundario min-h-11 px-4 text-sm text-[#B0103F]" disabled={ocupado === p.id} onClick={() => sacar(p)}>Sacar de la app</button>}

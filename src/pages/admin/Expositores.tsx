@@ -121,7 +121,7 @@ export default function Expositores({ participantes, recargar }: { participantes
               <li key={p.id} className="flex flex-wrap items-center justify-between gap-2 rounded-2xl bg-hueso px-3 py-2">
                 <span className="min-w-0 break-words">
                   <strong>{p.empresa ?? 'Sin empresa'}</strong>{p.stand ? ` · Stand ${p.stand}` : ' · sin stand'}<br />
-                  <span className="text-tinta-suave">{p.email} · {estadoPersona(p) === 'invitado' ? 'no ha entrado' : 'entró, pero no terminó el perfil'}</span>
+                  <span className="text-tinta-suave">{p.email} · {estadoPersona(p) === 'invitado' ? 'no ha entrado' : `empezó, pero no terminó el perfil${p.recordatorio_at ? ' · ya recibió el recordatorio' : ''}`}</span>
                 </span>
                 {estadoPersona(p) === 'invitado' && p.email && (
                   <button className="btn-secundario min-h-11 px-4 text-sm" disabled={enviando !== null} onClick={() => reenviar([p.email!], p.id)}>{enviando === p.id ? 'Enviando…' : 'Reenviar invitación'}</button>
@@ -129,7 +129,7 @@ export default function Expositores({ participantes, recargar }: { participantes
               </li>
             ))}
           </ul>
-          <p className="mt-2 text-xs text-tinta-suave">El botón del correo sirve 24 horas. Quien ya entró y no terminó no necesita otra invitación: entra con "Entrar" y su correo.</p>
+          <p className="mt-2 text-xs text-tinta-suave">El botón del correo sirve 24 horas. A quien empieza y no termina su perfil le llega solo, a los 45 minutos, un correo para que lo retome (una sola vez; de noche se espera hasta las 7 a.m.).</p>
         </details>
 
         <details>

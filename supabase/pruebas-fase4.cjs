@@ -83,6 +83,14 @@ const reg = (u, franjas) => u.cli.rpc('completar_registro', { p_nombre: 'Persona
     ok(!s3.error && !v3.error && pB2.activo === true, '19. Volver a admitir: la persona entra de nuevo', s3.error?.message ?? v3.error?.message);
     const s4 = await AD.cli.rpc('admin_sacar', { p_user: AD.id, p_sacar: true });
     ok(!!s4.error, '20. Nadie de la organización se puede sacar a sí mismo', s4.error?.message);
+    // Recordatorio de registro: solo cron o la organización
+    const rr1 = await fetch(`${URL}/functions/v1/correo-recordatorio`, { method: 'POST', headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${A.token}` }, body: JSON.stringify({ ensayo: true }) });
+    const rr2 = await fetch(`${URL}/functions/v1/correo-recordatorio`, { method: 'POST', headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${AD.token}` }, body: JSON.stringify({ ensayo: true }) });
+    const rj = await rr2.json();
+    ok(rr1.status === 403 && rr2.status === 200 && rj.ensayo === true, '21. El recordatorio de registro solo lo dispara la organización (ensayo sin enviar)', `${rr1.status} / ${rr2.status}`);
+    const { data: pend } = await admin.rpc('pendientes_de_recordatorio');
+    ok(Array.isArray(pend) && !pend.some((x) => emails.includes(x.email)), '22. Quien ya terminó su perfil o acaba de empezar no recibe recordatorio');
+    ok(!!(await A.cli.rpc('pendientes_de_recordatorio')).error, '23. Un participante no puede ver la lista de pendientes de recordatorio');
   } finally {
     const { data } = await admin.auth.admin.listUsers({ perPage: 1000 });
     for (const u of data.users.filter((u) => emails.includes(u.email))) await admin.auth.admin.deleteUser(u.id);
