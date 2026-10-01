@@ -121,7 +121,7 @@ Al cerrar cada fase: resumen de lo hecho, lo pendiente y las decisiones que nece
 - [x] Fase 4 (26-sep: panel de organización en `/admin`: solicitudes, participantes, reuniones con asistencia, cancelar y **reasignar**, lista de espera, cargar expositores, lista de stands, ajustes; correo de agenda del día siguiente con "Confirmo", programado)
 - [x] Fase 5 (26-sep: /privacidad, "Eliminar mi cuenta", meta CSP, `npm run intrusion` (31 ataques bloqueados), `npm run backup`, encuesta T+1 programada con respuesta desde el correo, guía de despliegue y reversión abajo). Pendiente de Lina: DNS de Resend y prueba con el equipo.
 - [x] Expositores cargados (30-sep: lista oficial de 61 empresas en `stand_list`; las empresas se crean al invitar)
-- [ ] Invitaciones enviadas (jue 1 / vie 2)
+- [x] Invitaciones enviadas (30-sep en la noche: 59 correos a 58 empresas en dos tandas desde el panel, 59 entregados según Resend, sin rebotes; correo "Estrenamos Expohost Match: nuestros expositores entran primero" con imagen `public/correo/vista-app.jpg`. Sin invitar: 869 (I05) y HIT (E06) por falta de contacto propio. El viernes 2 se abre al público)
 - [ ] Congelado v1.0-feria (sáb 3)
 
 ## Decisiones tomadas durante la construcción
