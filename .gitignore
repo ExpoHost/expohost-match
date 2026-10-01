@@ -8,3 +8,4 @@ backups
 .DS_Store
 supabase/.temp
 *.tsbuildinfo
+privado
