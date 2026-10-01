@@ -25,11 +25,27 @@ Deno.serve(async (req) => {
   if (!user) return json({ error: 'no autenticado' }, 401)
   if (user.app_metadata?.role !== 'admin') return json({ error: 'no autorizado' }, 403)
 
-  const { filas, solo_crear, solo_validar } = await req.json().catch(() => ({})) as { filas?: Fila[]; solo_crear?: boolean; solo_validar?: boolean }
-  if (!Array.isArray(filas) || filas.length === 0 || filas.length > 100) return json({ error: 'envía entre 1 y 100 filas' }, 400)
+  const { filas, solo_crear, solo_validar, reenviar } = await req.json().catch(() => ({})) as { filas?: Fila[]; solo_crear?: boolean; solo_validar?: boolean; reenviar?: string[] }
 
   const admin = createClient(url, Deno.env.get('SUPABASE_SERVICE_ROLE_KEY')!)
   const resultados: { email: string; estado: string; detalle?: string }[] = []
+
+  // Reenviar la invitación a personas ya invitadas que todavía no han entrado (el botón del correo vence en 24 horas)
+  if (Array.isArray(reenviar)) {
+    if (reenviar.length === 0 || reenviar.length > 100) return json({ error: 'envía entre 1 y 100 correos' }, 400)
+    for (const e of reenviar) {
+      const email = String(e ?? '').trim().toLowerCase()
+      const { data: priv } = await admin.from('profiles_private').select('user_id').eq('email', email).maybeSingle()
+      if (!priv) { resultados.push({ email, estado: 'error', detalle: 'ese correo no está invitado' }); continue }
+      const { data: u } = await admin.auth.admin.getUserById(priv.user_id)
+      if (u?.user?.last_sign_in_at || u?.user?.email_confirmed_at) { resultados.push({ email, estado: 'ya entró', detalle: 'no necesita invitación: entra con "Entrar" y su correo' }); continue }
+      const { error } = await admin.auth.admin.inviteUserByEmail(email, { redirectTo: `${APP_URL}/` })
+      resultados.push(error ? { email, estado: 'error', detalle: /security purposes|rate limit/i.test(error.message) ? 'se le envió un correo hace menos de un minuto; espera y vuelve a intentar' : error.message } : { email, estado: 'invitación reenviada' })
+    }
+    return json({ resultados })
+  }
+
+  if (!Array.isArray(filas) || filas.length === 0 || filas.length > 100) return json({ error: 'envía entre 1 y 100 filas' }, 400)
 
   // Ensayo: solo dice qué pasaría con cada fila (existe el usuario, existe la empresa), sin crear ni enviar nada
   if (solo_validar) {

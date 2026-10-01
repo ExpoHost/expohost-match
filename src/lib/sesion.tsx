@@ -13,6 +13,7 @@ export type Perfil = {
   foto_path: string | null
   tipo: 'asistente' | 'expositor'
   tier: string
+  activo?: boolean
   categoria: string | null
   busca: string[]
   ofrece: string[]
@@ -107,7 +108,7 @@ export async function subirFoto(blob: Blob) {
 async function cargarPerfil(uid: string): Promise<Perfil | null> {
   const [{ data: p, error: e1 }, { data: priv, error: e2 }] = await Promise.all([
     supabase.from('profiles')
-      .select('id, nombre, cargo, ciudad, bio, foto_path, tipo, tier, categoria, busca, ofrece, franjas, empresa:companies(nombre, tipo, stand, solicitud, stand_declarado)')
+      .select('id, nombre, cargo, ciudad, bio, foto_path, tipo, tier, categoria, busca, ofrece, franjas, activo, empresa:companies(nombre, tipo, stand, solicitud, stand_declarado)')
       .eq('id', uid).maybeSingle(),
     supabase.from('profiles_private').select('email, telefono').eq('user_id', uid).maybeSingle(),
   ])

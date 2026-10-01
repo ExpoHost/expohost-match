@@ -56,6 +56,7 @@ export function mensajeError(e: unknown): string {
   const m = e instanceof Error ? e.message : typeof e === 'object' && e && 'message' in e ? String((e as { message: unknown }).message) : String(e)
   if (/expired|invalid.*(otp|token)|token.*(expired|invalid)/i.test(m)) return 'El código no es válido o ya venció. Pide uno nuevo.'
   if (/rate limit|security purposes|too many/i.test(m)) return 'Ya enviamos un código hace poco. Espera un minuto e inténtalo de nuevo.'
+  if (/banned/i.test(m)) return 'La organización desactivó tu acceso a Expohost Match. Si crees que es un error, escríbenos a management@expohost.travel.'
   if (/signups not allowed|user not found/i.test(m)) return 'No encontramos un perfil con ese correo. Crea tu perfil primero.'
   if (/error sending (confirmation |magic link |recovery )?email/i.test(m)) return 'No pudimos enviar el correo en este momento. Inténtalo en un minuto o escríbenos a management@expohost.travel.'
   if (/failed to fetch|network/i.test(m)) return 'Sin conexión. Revisa tus datos móviles e inténtalo de nuevo.'

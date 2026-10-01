@@ -48,6 +48,16 @@ function ConSesion({ children }: { children: ReactNode }) {
       </div>
     </Pantalla>
   )
+  // La organización sacó a esta persona de la app: no ve nada más (la base además le bloquea la entrada)
+  if (perfil?.activo === false && session.user.app_metadata?.role !== 'admin') return (
+    <Pantalla>
+      <div className="space-y-4">
+        <h1 className="text-xl font-extrabold">Tu acceso está desactivado</h1>
+        <p className="text-tinta-suave">La organización desactivó tu acceso a Expohost Match. Si crees que es un error, escríbenos a management@expohost.travel.</p>
+        <button className="btn-secundario w-full" onClick={() => supabase.auth.signOut({ scope: 'local' })}>Cerrar sesión</button>
+      </div>
+    </Pantalla>
+  )
   const completo = perfilCompleto(perfil)
   if (!completo && loc.pathname !== '/completar') return <Navigate to="/completar" replace />
   if (completo && loc.pathname === '/completar') return <Navigate to={INICIO} replace />

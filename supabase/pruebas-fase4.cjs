@@ -62,6 +62,27 @@ const reg = (u, franjas) => u.cli.rpc('completar_registro', { p_nombre: 'Persona
     await A.cli.rpc('reagendar_reunion', { p_meeting: mt, p_block: ops[0].block_id }); await A.cli.rpc('reagendar_reunion', { p_meeting: mt, p_block: ops[1].block_id });
     const r13 = await A.cli.rpc('reagendar_reunion', { p_meeting: mt, p_block: ops[2].block_id });
     ok(/varias veces/.test(r13.error?.message ?? ''), '13. Tope de 3 cambios de hora por reunión al día', r13.error?.message);
+    // Sacar de la app: cancela reuniones, oculta y bloquea la entrada, sin borrar datos; se puede volver a admitir
+    const s1 = await A.cli.rpc('admin_sacar', { p_user: B.id, p_sacar: true });
+    ok(!!s1.error, '14. Quien no es de la organización no puede sacar a nadie', s1.error?.message);
+    const s2 = await AD.cli.rpc('admin_sacar', { p_user: B.id, p_sacar: true });
+    const { data: mtS } = await admin.from('meetings').select('estado').eq('id', mt).single();
+    const { data: pB } = await admin.from('profiles').select('activo, nombre').eq('id', B.id).single();
+    ok(!s2.error && s2.data.length === 1 && s2.data[0] === mt && mtS.estado === 'cancelada' && pB.activo === false && !!pB.nombre, '15. La organización saca a una persona: reunión cancelada, perfil oculto, datos conservados', s2.error?.message);
+    const ref = await B.cli.auth.refreshSession();
+    ok(!!ref.error, '16. La persona sacada no puede renovar su sesión', ref.error?.message);
+    const lk = await admin.auth.admin.generateLink({ type: 'magiclink', email: emails[2] });
+    const v2 = lk.error ? { error: lk.error } : await createClient(URL, PUBLISHABLE, opts).auth.verifyOtp({ token_hash: lk.data.properties.hashed_token, type: 'magiclink' });
+    ok(!!v2.error, '17. La persona sacada no puede volver a entrar', v2.error?.message);
+    const { data: lista } = await AD.cli.rpc('admin_participantes'); const fb = (lista ?? []).find((x) => x.id === B.id);
+    ok(!!fb && fb.sacado === true && fb.entro === true, '18. El panel la muestra como fuera de la app');
+    const s3 = await AD.cli.rpc('admin_sacar', { p_user: B.id, p_sacar: false });
+    const lk2 = await admin.auth.admin.generateLink({ type: 'magiclink', email: emails[2] });
+    const v3 = lk2.error ? { error: lk2.error } : await createClient(URL, PUBLISHABLE, opts).auth.verifyOtp({ token_hash: lk2.data.properties.hashed_token, type: 'magiclink' });
+    const { data: pB2 } = await admin.from('profiles').select('activo').eq('id', B.id).single();
+    ok(!s3.error && !v3.error && pB2.activo === true, '19. Volver a admitir: la persona entra de nuevo', s3.error?.message ?? v3.error?.message);
+    const s4 = await AD.cli.rpc('admin_sacar', { p_user: AD.id, p_sacar: true });
+    ok(!!s4.error, '20. Nadie de la organización se puede sacar a sí mismo', s4.error?.message);
   } finally {
     const { data } = await admin.auth.admin.listUsers({ perPage: 1000 });
     for (const u of data.users.filter((u) => emails.includes(u.email))) await admin.auth.admin.deleteUser(u.id);
