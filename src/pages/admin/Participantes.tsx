@@ -1,10 +1,12 @@
 import { useState } from 'react'
-import { Aviso } from '../../components/ui'
+import { Avatar, Aviso, Etiquetas } from '../../components/ui'
+import { FRANJAS } from '../../lib/catalogos'
+import { diaTexto, hora, lugarTexto } from '../../lib/reuniones'
 import { supabase } from '../../lib/supabase'
 import { descargarCsv } from '../../lib/csv'
 import { avisarReunion } from '../../lib/correos'
 import { mensajeError, useCatalogos } from '../../lib/utilidades'
-import { ESTADOS, estadoPersona, etiquetaParticipacion, TIERS, type Estado, type Participante } from './tipos'
+import { ASISTENCIA, ESTADOS, estadoPersona, etiquetaParticipacion, TIERS, type Estado, type Participante, type ReunionAdmin } from './tipos'
 
 type Filtro = Estado | 'todos'
 const FILTROS: { id: Filtro; texto: string; ayuda: string }[] = [
@@ -27,6 +29,67 @@ const tipoDe = (p: Participante): Tipo[] => {
   if (p.solicitud && p.empresa_tipo !== 'expositor') t.push('pide')
   return t
 }
+const fechaHora = (iso: string) => new Date(iso).toLocaleString('es-CO', { day: 'numeric', month: 'short', hour: 'numeric', minute: '2-digit', timeZone: 'America/Bogota' })
+
+// Ficha completa de una persona (solo la ve la organización)
+function FichaPerfil({ p, categoria, reuniones }: { p: Participante; categoria: string; reuniones: ReunionAdmin[] | null }) {
+  const suyas = (reuniones ?? []).filter((r) => r.a_id === p.id || r.b_id === p.id)
+    .sort((a, b) => (a.estado === b.estado ? 0 : a.estado === 'confirmada' ? -1 : 1) || (a.dia + a.inicio).localeCompare(b.dia + b.inicio))
+  const Dato = ({ t, children }: { t: string; children: React.ReactNode }) => (
+    <div className="grid gap-1 border-t border-linea py-3 sm:grid-cols-[11rem_minmax(0,1fr)] sm:gap-4">
+      <dt className="text-xs font-bold uppercase tracking-wider text-tinta-suave">{t}</dt>
+      <dd className="min-w-0 break-words text-sm">{children}</dd>
+    </div>
+  )
+  const nada = <span className="text-tinta-suave">Sin dato</span>
+  return (
+    <div className="mt-4 rounded-2xl bg-hueso p-4">
+      <div className="flex items-center gap-4">
+        <Avatar path={p.foto_path} nombre={p.nombre} tam="h-20 w-20 text-2xl" />
+        <div className="min-w-0">
+          <p className="text-lg font-extrabold leading-tight">{p.nombre}</p>
+          <p className="text-sm text-tinta-suave">{[p.cargo, p.empresa].filter(Boolean).join(' · ') || 'Sin cargo ni empresa todavía'}</p>
+          <p className="mt-1 text-xs font-bold text-azul">{etiquetaParticipacion(p)}</p>
+        </div>
+      </div>
+      <dl className="mt-3">
+        <Dato t="Sobre esta persona">{p.bio ? <span className="whitespace-pre-line">{p.bio}</span> : nada}</Dato>
+        <Dato t="Categoría">{categoria || nada}</Dato>
+        <Dato t="Ciudad">{p.ciudad || nada}</Dato>
+        <Dato t="Busca">{p.busca.length ? <Etiquetas items={p.busca} color="rosa" /> : nada}</Dato>
+        <Dato t="Ofrece">{p.ofrece.length ? <Etiquetas items={p.ofrece} color="azul" /> : nada}</Dato>
+        <Dato t="Disponible">{p.franjas.length ? FRANJAS.filter((f) => p.franjas.includes(f.id)).map((f) => <span key={f.id} className="block">{f.dia}, {f.hora}</span>) : nada}</Dato>
+        <Dato t="Correo">{p.email || nada}</Dato>
+        <Dato t="Celular">{p.telefono || nada}</Dato>
+        <Dato t="Empresa y stand">{p.empresa ? `${p.empresa}${p.stand ? ` · Stand ${p.stand}` : ''}${p.solicitud && p.empresa_tipo !== 'expositor' ? ` · pidió ser expositor${p.stand_declarado ? ` (declaró stand ${p.stand_declarado})` : ''}` : ''}` : nada}</Dato>
+        <Dato t="Prioridad">{p.tier}</Dato>
+        <Dato t="Información comercial">{p.acepta_comercial ? 'Aceptó recibirla' : 'No la aceptó'}</Dato>
+        <Dato t="Registro">{`${p.invitado ? 'Invitado' : 'Se registró'} el ${fechaHora(p.created_at)}${p.ultima_entrada ? ` · última entrada: ${fechaHora(p.ultima_entrada)}` : ' · todavía no ha entrado'}`}</Dato>
+        <Dato t="Actividad">{`${p.matches} matches · ${p.reuniones} reuniones confirmadas`}</Dato>
+      </dl>
+      <div className="border-t border-linea pt-3">
+        <p className="text-xs font-bold uppercase tracking-wider text-tinta-suave">Sus reuniones</p>
+        {reuniones === null ? <p className="mt-2 text-sm text-tinta-suave" role="status">Cargando reuniones…</p>
+          : suyas.length === 0 ? <p className="mt-2 text-sm text-tinta-suave">Todavía no tiene reuniones.</p>
+          : (
+            <ul className="mt-2 space-y-2">
+              {suyas.map((r) => {
+                const yoA = r.a_id === p.id
+                return (
+                  <li key={r.id} className={`rounded-2xl bg-white px-3 py-2 text-sm ${r.estado === 'cancelada' ? 'opacity-60' : ''}`}>
+                    <strong>{diaTexto(r.dia)}, {hora(r.inicio)}</strong> · {lugarTexto(r)}
+                    <br />con {yoA ? r.b_nombre : r.a_nombre}{(yoA ? r.b_empresa : r.a_empresa) ? ` (${yoA ? r.b_empresa : r.a_empresa})` : ''}
+                    <span className="text-tinta-suave"> · {r.estado === 'cancelada' ? 'cancelada' : `${(yoA ? r.confirmo_a : r.confirmo_b) ? 'confirmó' : 'sin confirmar'} · ${ASISTENCIA[yoA ? r.asistencia_a : r.asistencia_b]}`}</span>
+                  </li>
+                )
+              })}
+            </ul>
+          )}
+      </div>
+    </div>
+  )
+}
+
 const fecha = (iso: string) => new Date(iso).toLocaleDateString('es-CO', { day: 'numeric', month: 'short', timeZone: 'America/Bogota' })
 
 export default function Participantes({ participantes, recargar }: { participantes: Participante[] | null; recargar: () => Promise<void> }) {
@@ -40,6 +103,13 @@ export default function Participantes({ participantes, recargar }: { participant
   const [ofrece, setOfrece] = useState('')
   const [categoria, setCategoria] = useState('')
   const { categorias } = useCatalogos()
+  const [abiertos, setAbiertos] = useState<Set<string>>(() => new Set())
+  const [reuniones, setReuniones] = useState<ReunionAdmin[] | null>(null)
+  // abre o cierra la ficha; las reuniones se cargan la primera vez que se abre una
+  function alternarFicha(id: string) {
+    setAbiertos((prev) => { const n = new Set(prev); if (n.has(id)) n.delete(id); else n.add(id); return n })
+    if (reuniones === null) supabase.rpc('admin_reuniones').then(({ data }) => setReuniones((data ?? []) as ReunionAdmin[]))
+  }
   if (!participantes) return <p className="text-tinta-suave" role="status">Cargando…</p>
 
   const cuenta = (f: Filtro) => (f === 'todos' ? participantes.length : participantes.filter((p) => estadoPersona(p) === f).length)
@@ -160,7 +230,7 @@ export default function Participantes({ participantes, recargar }: { participant
             <li key={p.id} className={`tarjeta p-4 ${estado === 'fuera' ? 'opacity-70' : ''}`}>
               <div className="flex flex-wrap items-start justify-between gap-3">
                 <div className="min-w-0">
-                  <p className="font-bold">{p.nombre === 'Nuevo participante' ? (p.empresa ?? 'Sin nombre todavía') : p.nombre} <span className="text-sm font-normal text-tinta-suave">{p.nombre === 'Nuevo participante' ? '' : [p.cargo, p.empresa].filter(Boolean).join(' · ')}</span></p>
+                  <p className="font-bold"><button type="button" className="text-left font-bold hover:text-azul hover:underline" onClick={() => alternarFicha(p.id)} aria-expanded={abiertos.has(p.id)}>{p.nombre === 'Nuevo participante' ? (p.empresa ?? 'Sin nombre todavía') : p.nombre}</button> <span className="text-sm font-normal text-tinta-suave">{p.nombre === 'Nuevo participante' ? '' : [p.cargo, p.empresa].filter(Boolean).join(' · ')}</span></p>
                   <p className="break-words text-sm text-tinta-suave">{p.email}{p.telefono ? ` · ${p.telefono}` : ''}{p.ciudad ? ` · ${p.ciudad}` : ''}</p>
                   <p className="mt-2 flex flex-wrap items-center gap-2 text-xs font-bold">
                     <span className={`rounded-full px-2.5 py-1 ${ESTADOS[estado].clase}`}>{ESTADOS[estado].texto}</span>
@@ -174,6 +244,7 @@ export default function Participantes({ participantes, recargar }: { participant
                   </p>
                 </div>
                 <div className="flex flex-wrap items-center gap-2">
+                  <button className="btn-primario min-h-11 px-4 text-sm" onClick={() => alternarFicha(p.id)} aria-expanded={abiertos.has(p.id)}>{abiertos.has(p.id) ? 'Ocultar perfil' : 'Ver perfil'}</button>
                   {estado === 'completo' && p.tipo !== 'expositor' && (
                     <label className="text-xs font-semibold text-tinta-suave">Prioridad{' '}
                       <select className="campo mt-0 inline-block min-h-11 w-auto py-1 text-sm" value={p.tier} onChange={(e) => cambiarPrioridad(p, e.target.value)} aria-label={`Prioridad de ${p.nombre}`}>
@@ -188,6 +259,7 @@ export default function Participantes({ participantes, recargar }: { participant
                     : !p.es_admin && <button className="btn-secundario min-h-11 px-4 text-sm text-[#B0103F]" disabled={ocupado === p.id} onClick={() => sacar(p)}>Sacar de la app</button>}
                 </div>
               </div>
+              {abiertos.has(p.id) && <FichaPerfil p={p} categoria={p.categoria ? nombreCategoria(p.categoria) : ''} reuniones={reuniones} />}
             </li>
           )
         })}

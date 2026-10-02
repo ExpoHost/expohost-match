@@ -7,6 +7,7 @@ export type Participante = {
   busca: string[]; ofrece: string[]; franjas: string[]; foto_path: string | null; created_at: string
   matches: number; reuniones: number
   entro: boolean; sacado: boolean; es_admin: boolean; recordatorio_at: string | null
+  bio: string | null; ultima_entrada: string | null; acepta_comercial: boolean
 }
 
 export type ReunionAdmin = {

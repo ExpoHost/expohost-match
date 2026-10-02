@@ -173,6 +173,8 @@ Al cerrar cada fase: resumen de lo hecho, lo pendiente y las decisiones que nece
 
 - **2-oct, filtros en Personas (pedido de Lina):** además de los botones de estado, cuatro listas que se combinan: tipo de participante (expositor con stand, proveedor sin stand, asistente, pidió ser expositor), categoría, qué busca y qué ofrece, cada opción con su conteo. "Quitar filtros" y "Descargar en Excel (N)" descargan exactamente lo filtrado.
 
+- **2-oct, Ver perfil en Personas (pedido de Lina):** botón "Ver perfil" (o tocar el nombre) despliega la ficha completa: foto, descripción, categoría, ciudad, busca, ofrece, horarios disponibles, correo, celular, empresa y stand, prioridad, información comercial, registro y última entrada, actividad y sus reuniones (de `admin_reuniones`, cargadas al abrir la primera ficha). Cambio 26: `admin_participantes` devuelve también `bio`, `ultima_entrada` y `acepta_comercial`.
+
 ## Cuentas y dónde viven las claves
 
 - GitHub: repositorio público `expohost-match`. GitHub Pages con dominio personalizado match.expohost.travel (CNAME → <usuario>.github.io).
