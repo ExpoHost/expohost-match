@@ -171,6 +171,8 @@ Al cerrar cada fase: resumen de lo hecho, lo pendiente y las decisiones que nece
 
 - **2-oct, contacto solo desde el día de la feria (decisión de Lina):** las personas hacen match y agendan desde ya, pero el WhatsApp y el correo de sus matches solo se ven desde el **martes 6 de octubre a las 6:00 a.m. (Bogotá)**, para que no cuadren por fuera y la reunión ocurra en la feria. Lo bloquea la base: `contacto_de` exige `contacto_abierto()` (salvo la propia persona y los admins), con la fecha en `settings.contacto_desde` (se puede mover sin publicar código). En Mi agenda, antes de esa hora, en lugar de "Ver contacto" aparece cuándo se habilita, y el Excel de los expositores sale con esas columnas en "se habilita…". Los correos de reunión nunca llevan contacto. Antes del cambio, dos participantes reales ya habían visto el contacto de un match. Cambio `supabase/cambios/25-contacto-desde-la-feria.sql`; prueba 5b depende de la fecha.
 
+- **2-oct, filtros en Personas (pedido de Lina):** además de los botones de estado, cuatro listas que se combinan: tipo de participante (expositor con stand, proveedor sin stand, asistente, pidió ser expositor), categoría, qué busca y qué ofrece, cada opción con su conteo. "Quitar filtros" y "Descargar en Excel (N)" descargan exactamente lo filtrado.
+
 ## Cuentas y dónde viven las claves
 
 - GitHub: repositorio público `expohost-match`. GitHub Pages con dominio personalizado match.expohost.travel (CNAME → <usuario>.github.io).

@@ -3,7 +3,7 @@ import { Aviso } from '../../components/ui'
 import { supabase } from '../../lib/supabase'
 import { descargarCsv } from '../../lib/csv'
 import { avisarReunion } from '../../lib/correos'
-import { mensajeError } from '../../lib/utilidades'
+import { mensajeError, useCatalogos } from '../../lib/utilidades'
 import { ESTADOS, estadoPersona, etiquetaParticipacion, TIERS, type Estado, type Participante } from './tipos'
 
 type Filtro = Estado | 'todos'
@@ -14,6 +14,19 @@ const FILTROS: { id: Filtro; texto: string; ayuda: string }[] = [
   { id: 'fuera', texto: 'Fuera de la app', ayuda: 'Personas que la organización sacó. No pueden entrar y nadie las ve. Sus datos se conservan y se pueden volver a admitir.' },
   { id: 'todos', texto: 'Todos', ayuda: 'Todas las personas, en cualquier estado.' },
 ]
+// Qué es cada persona dentro de la app (misma regla que las etiquetas: solo la empresa con stand es "Expositor")
+type Tipo = 'expositor' | 'proveedor' | 'asistente' | 'pide'
+const TIPOS: { id: Tipo; texto: string }[] = [
+  { id: 'expositor', texto: 'Expositores (con stand)' },
+  { id: 'proveedor', texto: 'Proveedores / servicio (sin stand)' },
+  { id: 'asistente', texto: 'Asistentes' },
+  { id: 'pide', texto: 'Pidieron ser expositores (por aprobar)' },
+]
+const tipoDe = (p: Participante): Tipo[] => {
+  const t: Tipo[] = [p.tipo === 'expositor' && p.stand ? 'expositor' : p.empresa_tipo === 'expositor' ? 'proveedor' : 'asistente']
+  if (p.solicitud && p.empresa_tipo !== 'expositor') t.push('pide')
+  return t
+}
 const fecha = (iso: string) => new Date(iso).toLocaleDateString('es-CO', { day: 'numeric', month: 'short', timeZone: 'America/Bogota' })
 
 export default function Participantes({ participantes, recargar }: { participantes: Participante[] | null; recargar: () => Promise<void> }) {
@@ -22,13 +35,25 @@ export default function Participantes({ participantes, recargar }: { participant
   const [error, setError] = useState<string | null>(null)
   const [aviso, setAviso] = useState<string | null>(null)
   const [ocupado, setOcupado] = useState<string | null>(null)
+  const [tipo, setTipo] = useState<Tipo | ''>('')
+  const [busca, setBusca] = useState('')
+  const [ofrece, setOfrece] = useState('')
+  const [categoria, setCategoria] = useState('')
+  const { categorias } = useCatalogos()
   if (!participantes) return <p className="text-tinta-suave" role="status">Cargando…</p>
 
   const cuenta = (f: Filtro) => (f === 'todos' ? participantes.length : participantes.filter((p) => estadoPersona(p) === f).length)
   const q = busqueda.trim().toLowerCase()
-  // al buscar se busca en todos, sin importar la pestaña elegida
-  const lista = participantes
-    .filter((p) => (q ? [p.nombre, p.empresa, p.email, p.cargo, p.ciudad].some((v) => v?.toLowerCase().includes(q)) : filtro === 'todos' || estadoPersona(p) === filtro))
+  // al buscar por nombre se busca en todos los estados; los demás filtros se suman entre sí
+  const base = participantes.filter((p) => (q ? [p.nombre, p.empresa, p.email, p.cargo, p.ciudad].some((v) => v?.toLowerCase().includes(q)) : filtro === 'todos' || estadoPersona(p) === filtro))
+  const lista = base.filter((p) => (!tipo || tipoDe(p).includes(tipo)) && (!busca || p.busca.includes(busca)) && (!ofrece || p.ofrece.includes(ofrece)) && (!categoria || p.categoria === categoria))
+  const hayFiltros = !!(tipo || busca || ofrece || categoria)
+  const quitarFiltros = () => { setTipo(''); setBusca(''); setOfrece(''); setCategoria('') }
+  // opciones con su conteo dentro del estado elegido; solo las que alguien tiene (más la elegida)
+  const contar = (valores: string[]) => { const m = new Map<string, number>(); for (const v of valores) m.set(v, (m.get(v) ?? 0) + 1); return m }
+  const nBusca = contar(base.flatMap((p) => p.busca)), nOfrece = contar(base.flatMap((p) => p.ofrece)), nCat = contar(base.map((p) => p.categoria ?? '').filter(Boolean))
+  const opciones = (m: Map<string, number>, elegido: string) => [...new Set([...m.keys(), ...(elegido ? [elegido] : [])])].sort((a, b) => (m.get(b) ?? 0) - (m.get(a) ?? 0) || a.localeCompare(b, 'es'))
+  const nombreCategoria = (slug: string) => categorias.find((c) => c.slug === slug)?.nombre ?? slug
 
   async function cambiarPrioridad(p: Participante, tier: string) {
     setError(null); setAviso(null)
@@ -77,9 +102,10 @@ export default function Participantes({ participantes, recargar }: { participant
     else setError(`${p.email}: ${r?.estado ?? 'no se pudo reenviar'}${r?.detalle ? ` · ${r.detalle}` : ''}`)
   }
 
-  const exportar = () => descargarCsv('participantes', participantes.map((p) => ({
+  // descarga exactamente lo que se ve en pantalla (con los filtros aplicados)
+  const exportar = () => descargarCsv('participantes', lista.map((p) => ({
     nombre: p.nombre, empresa: p.empresa, cargo: p.cargo, ciudad: p.ciudad, correo: p.email, celular: p.telefono,
-    estado: ESTADOS[estadoPersona(p)].texto, participacion: etiquetaParticipacion(p), tier: p.tier, categoria: p.categoria,
+    estado: ESTADOS[estadoPersona(p)].texto, participacion: etiquetaParticipacion(p), tier: p.tier, categoria: p.categoria ? nombreCategoria(p.categoria) : '',
     busca: p.busca, ofrece: p.ofrece, franjas: p.franjas, matches: p.matches, reuniones: p.reuniones,
     registro: p.created_at.slice(0, 16).replace('T', ' '),
   })))
@@ -95,13 +121,38 @@ export default function Participantes({ participantes, recargar }: { participant
         ))}
       </div>
       <p className="text-sm text-tinta-suave">{q ? `Buscando "${busqueda.trim()}" entre todas las personas.` : FILTROS.find((f) => f.id === filtro)!.ayuda}</p>
+      <input className="campo mt-0" placeholder="Buscar por nombre, empresa, correo…" value={busqueda} onChange={(e) => setBusqueda(e.target.value)} aria-label="Buscar persona" id="buscar-persona" />
+      <fieldset className="grid gap-3 rounded-2xl bg-white p-4 sm:grid-cols-2">
+        <legend className="sr-only">Filtrar por tipo, categoría e intereses</legend>
+        <label className="block text-sm font-semibold" htmlFor="f-tipo">Tipo de participante
+          <select id="f-tipo" className="campo" value={tipo} onChange={(e) => setTipo(e.target.value as Tipo | '')}>
+            <option value="">Todos los tipos</option>
+            {TIPOS.map((t) => <option key={t.id} value={t.id}>{t.texto} ({base.filter((p) => tipoDe(p).includes(t.id)).length})</option>)}
+          </select></label>
+        <label className="block text-sm font-semibold" htmlFor="f-categoria">Categoría
+          <select id="f-categoria" className="campo" value={categoria} onChange={(e) => setCategoria(e.target.value)}>
+            <option value="">Todas las categorías</option>
+            {opciones(nCat, categoria).map((c) => <option key={c} value={c}>{nombreCategoria(c)} ({nCat.get(c) ?? 0})</option>)}
+          </select></label>
+        <label className="block text-sm font-semibold" htmlFor="f-busca">Qué busca
+          <select id="f-busca" className="campo" value={busca} onChange={(e) => setBusca(e.target.value)}>
+            <option value="">Cualquier cosa</option>
+            {opciones(nBusca, busca).map((t) => <option key={t} value={t}>{t} ({nBusca.get(t) ?? 0})</option>)}
+          </select></label>
+        <label className="block text-sm font-semibold" htmlFor="f-ofrece">Qué ofrece
+          <select id="f-ofrece" className="campo" value={ofrece} onChange={(e) => setOfrece(e.target.value)}>
+            <option value="">Cualquier cosa</option>
+            {opciones(nOfrece, ofrece).map((t) => <option key={t} value={t}>{t} ({nOfrece.get(t) ?? 0})</option>)}
+          </select></label>
+      </fieldset>
       <div className="flex flex-wrap items-center gap-3">
-        <input className="campo mt-0 min-w-0 flex-1" placeholder="Buscar por nombre, empresa, correo…" value={busqueda} onChange={(e) => setBusqueda(e.target.value)} aria-label="Buscar persona" />
-        <button className="btn-secundario text-sm" onClick={exportar}>Descargar en Excel</button>
+        <p className="text-sm font-semibold" role="status">{lista.length === 1 ? 'Se muestra 1 persona' : `Se muestran ${lista.length} personas`}{hayFiltros ? ' con estos filtros' : ''}.</p>
+        {hayFiltros && <button className="min-h-11 text-sm font-semibold text-azul" onClick={quitarFiltros}>Quitar filtros</button>}
+        <button className="btn-secundario ml-auto text-sm" onClick={exportar} disabled={lista.length === 0}>Descargar en Excel ({lista.length})</button>
       </div>
       {error && <Aviso>{error}</Aviso>}
       {aviso && <Aviso tipo="ok">{aviso}</Aviso>}
-      {lista.length === 0 && <p className="rounded-2xl bg-white px-4 py-6 text-center text-sm text-tinta-suave">{q ? 'No encontramos a nadie con ese dato.' : 'No hay nadie en este grupo.'}</p>}
+      {lista.length === 0 && <p className="rounded-2xl bg-white px-4 py-6 text-center text-sm text-tinta-suave">{q ? 'No encontramos a nadie con ese dato.' : hayFiltros ? 'Nadie cumple estos filtros. Prueba quitando alguno.' : 'No hay nadie en este grupo.'}</p>}
       <ul className="space-y-2">
         {lista.map((p) => {
           const estado = estadoPersona(p)
