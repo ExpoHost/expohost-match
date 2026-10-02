@@ -1,6 +1,6 @@
-import { useState } from 'react'
+import { useState, type FormEvent } from 'react'
 import { Avatar, Aviso, Etiquetas } from '../../components/ui'
-import { FRANJAS } from '../../lib/catalogos'
+import { FRANJAS, PAISES, separarTelefono } from '../../lib/catalogos'
 import { diaTexto, hora, lugarTexto } from '../../lib/reuniones'
 import { supabase } from '../../lib/supabase'
 import { descargarCsv } from '../../lib/csv'
@@ -31,8 +31,87 @@ const tipoDe = (p: Participante): Tipo[] => {
 }
 const fechaHora = (iso: string) => new Date(iso).toLocaleString('es-CO', { day: 'numeric', month: 'short', hour: 'numeric', minute: '2-digit', timeZone: 'America/Bogota' })
 
+// La organización corrige los datos de una persona (por ejemplo, cuando pide ayuda para cambiar su nombre).
+// Campos de texto no controlados, leídos con FormData; etiquetas y horarios con botones como en el registro.
+function EditarPerfil({ p, tags, categorias, onCerrar, onGuardado }: { p: Participante; tags: string[]; categorias: { slug: string; nombre: string }[]; onCerrar: () => void; onGuardado: (msg: string) => void }) {
+  const [busca, setBusca] = useState<string[]>(p.busca)
+  const [ofrece, setOfrece] = useState<string[]>(p.ofrece)
+  const [franjas, setFranjas] = useState<string[]>(p.franjas)
+  const [error, setError] = useState<string | null>(null)
+  const [guardando, setGuardando] = useState(false)
+  const tel = separarTelefono(p.telefono ?? '')
+  const alternar = (lista: string[], set: (v: string[]) => void, v: string) => set(lista.includes(v) ? lista.filter((x) => x !== v) : [...lista, v])
+  const opcionesTags = [...new Set([...tags, ...p.busca, ...p.ofrece])]
+
+  async function guardar(ev: FormEvent<HTMLFormElement>) {
+    ev.preventDefault()
+    const d = new FormData(ev.currentTarget)
+    const val = (k: string) => String(d.get(k) ?? '').trim()
+    const numero = val('numero').replace(/\D/g, '')
+    const codigo = PAISES.find(([n]) => n === val('pais'))?.[1] ?? '57'
+    if (val('nombre').length < 2) { setError('Escribe el nombre de la persona.'); return }
+    if (val('bio').length > 280) { setError('La presentación tiene máximo 280 caracteres.'); return }
+    if (numero && (numero.length < 6 || numero.length > 15)) { setError('Revisa el número de celular: solo dígitos, sin el código del país.'); return }
+    setGuardando(true); setError(null)
+    const { error } = await supabase.rpc('admin_editar_perfil', {
+      p_user: p.id, p_nombre: val('nombre'), p_cargo: val('cargo'), p_ciudad: val('ciudad'), p_bio: val('bio'),
+      p_telefono: numero ? `+${codigo} ${numero}` : '', p_categoria: val('categoria'),
+      p_busca: busca, p_ofrece: ofrece, p_franjas: franjas, p_empresa: p.company_id ? val('empresa') : null,
+    })
+    setGuardando(false)
+    if (error) { setError(mensajeError(error)); return }
+    onGuardado(`Guardamos los cambios de ${val('nombre')}.`)
+  }
+
+  const Chip = ({ activo, onClick, children, rosa }: { activo: boolean; onClick: () => void; children: React.ReactNode; rosa?: boolean }) => (
+    <button type="button" aria-pressed={activo} onClick={onClick}
+      className={`min-h-11 rounded-full border px-3 py-2 text-left text-sm ${activo ? (rosa ? 'border-rosa bg-rosa/15 font-semibold text-[#B0103F]' : 'border-azul bg-azul text-white') : 'border-linea bg-white text-tinta'}`}>{children}</button>
+  )
+  return (
+    <form onSubmit={guardar} noValidate className="mt-4 space-y-4 rounded-2xl border-2 border-azul bg-white p-4">
+      <div>
+        <p className="font-extrabold">Editar los datos de {p.nombre}</p>
+        <p className="text-sm text-tinta-suave">Los cambios se ven de inmediato en la app. Tipo, prioridad y stand se cambian con sus propios botones.</p>
+      </div>
+      <div className="grid gap-3 sm:grid-cols-2">
+        <label className="etiqueta" htmlFor={`ed-nombre-${p.id}`}>Nombre<input id={`ed-nombre-${p.id}`} name="nombre" className="campo" defaultValue={p.nombre === 'Nuevo participante' ? '' : p.nombre} maxLength={80} /></label>
+        <label className="etiqueta" htmlFor={`ed-cargo-${p.id}`}>Cargo<input id={`ed-cargo-${p.id}`} name="cargo" className="campo" defaultValue={p.cargo ?? ''} maxLength={80} /></label>
+        {p.company_id && <label className="etiqueta" htmlFor={`ed-empresa-${p.id}`}>Empresa <span className="font-normal text-tinta-suave">(cambia para toda la empresa)</span><input id={`ed-empresa-${p.id}`} name="empresa" className="campo" defaultValue={p.empresa ?? ''} maxLength={80} /></label>}
+        <label className="etiqueta" htmlFor={`ed-ciudad-${p.id}`}>Ciudad<input id={`ed-ciudad-${p.id}`} name="ciudad" className="campo" defaultValue={p.ciudad ?? ''} maxLength={60} /></label>
+        <label className="etiqueta" htmlFor={`ed-categoria-${p.id}`}>Categoría
+          <select id={`ed-categoria-${p.id}`} name="categoria" className="campo" defaultValue={p.categoria ?? ''}>
+            <option value="">Sin categoría</option>
+            {categorias.map((c) => <option key={c.slug} value={c.slug}>{c.nombre}</option>)}
+          </select></label>
+        <div className="etiqueta">Celular
+          <div className="mt-1 flex flex-col gap-2 sm:flex-row">
+            <select name="pais" aria-label="Código de país" className="campo mt-0 sm:w-36 sm:shrink-0" defaultValue={tel.pais}>
+              {PAISES.map(([n, c]) => <option key={n} value={n}>+{c} {n}</option>)}
+            </select>
+            <input name="numero" aria-label="Número de celular" inputMode="numeric" className="campo mt-0 min-w-0 sm:flex-1" defaultValue={tel.numero} maxLength={15} />
+          </div>
+        </div>
+      </div>
+      <label className="etiqueta" htmlFor={`ed-bio-${p.id}`}>Presentación <span className="font-normal text-tinta-suave">(máximo 280 caracteres)</span>
+        <textarea id={`ed-bio-${p.id}`} name="bio" className="campo min-h-24 py-3" defaultValue={p.bio ?? ''} maxLength={280} /></label>
+      <fieldset><legend className="etiqueta">Busca</legend>
+        <div className="mt-2 flex flex-wrap gap-2">{opcionesTags.map((t) => <Chip key={t} rosa activo={busca.includes(t)} onClick={() => alternar(busca, setBusca, t)}>{t}</Chip>)}</div></fieldset>
+      <fieldset><legend className="etiqueta">Ofrece</legend>
+        <div className="mt-2 flex flex-wrap gap-2">{opcionesTags.map((t) => <Chip key={t} activo={ofrece.includes(t)} onClick={() => alternar(ofrece, setOfrece, t)}>{t}</Chip>)}</div></fieldset>
+      <fieldset><legend className="etiqueta">Horarios en que puede reunirse</legend>
+        <div className="mt-2 flex flex-wrap gap-2">{FRANJAS.map((f) => <Chip key={f.id} activo={franjas.includes(f.id)} onClick={() => alternar(franjas, setFranjas, f.id)}>{f.dia}, {f.hora}</Chip>)}</div></fieldset>
+      {busca.length + ofrece.length === 0 && <Aviso tipo="info">Sin nada en "Busca" ni en "Ofrece", la persona deja de aparecer en Perfiles.</Aviso>}
+      {error && <Aviso>{error}</Aviso>}
+      <div className="flex flex-wrap gap-2">
+        <button className="btn-primario" disabled={guardando}>{guardando ? 'Guardando…' : 'Guardar cambios'}</button>
+        <button type="button" className="btn-secundario" onClick={onCerrar}>Cancelar</button>
+      </div>
+    </form>
+  )
+}
+
 // Ficha completa de una persona (solo la ve la organización)
-function FichaPerfil({ p, categoria, reuniones }: { p: Participante; categoria: string; reuniones: ReunionAdmin[] | null }) {
+function FichaPerfil({ p, categoria, reuniones, onEditar }: { p: Participante; categoria: string; reuniones: ReunionAdmin[] | null; onEditar: () => void }) {
   const suyas = (reuniones ?? []).filter((r) => r.a_id === p.id || r.b_id === p.id)
     .sort((a, b) => (a.estado === b.estado ? 0 : a.estado === 'confirmada' ? -1 : 1) || (a.dia + a.inicio).localeCompare(b.dia + b.inicio))
   const Dato = ({ t, children }: { t: string; children: React.ReactNode }) => (
@@ -51,6 +130,7 @@ function FichaPerfil({ p, categoria, reuniones }: { p: Participante; categoria: 
           <p className="text-sm text-tinta-suave">{[p.cargo, p.empresa].filter(Boolean).join(' · ') || 'Sin cargo ni empresa todavía'}</p>
           <p className="mt-1 text-xs font-bold text-azul">{etiquetaParticipacion(p)}</p>
         </div>
+        <button type="button" className="btn-secundario ml-auto min-h-11 shrink-0 px-4 text-sm" onClick={onEditar}>Editar datos</button>
       </div>
       <dl className="mt-3">
         <Dato t="Sobre esta persona">{p.bio ? <span className="whitespace-pre-line">{p.bio}</span> : nada}</Dato>
@@ -102,7 +182,8 @@ export default function Participantes({ participantes, recargar }: { participant
   const [busca, setBusca] = useState('')
   const [ofrece, setOfrece] = useState('')
   const [categoria, setCategoria] = useState('')
-  const { categorias } = useCatalogos()
+  const { categorias, tags } = useCatalogos()
+  const [editando, setEditando] = useState<string | null>(null)
   const [abiertos, setAbiertos] = useState<Set<string>>(() => new Set())
   const [reuniones, setReuniones] = useState<ReunionAdmin[] | null>(null)
   // abre o cierra la ficha; las reuniones se cargan la primera vez que se abre una
@@ -259,7 +340,9 @@ export default function Participantes({ participantes, recargar }: { participant
                     : !p.es_admin && <button className="btn-secundario min-h-11 px-4 text-sm text-[#B0103F]" disabled={ocupado === p.id} onClick={() => sacar(p)}>Sacar de la app</button>}
                 </div>
               </div>
-              {abiertos.has(p.id) && <FichaPerfil p={p} categoria={p.categoria ? nombreCategoria(p.categoria) : ''} reuniones={reuniones} />}
+              {abiertos.has(p.id) && (editando === p.id
+                ? <EditarPerfil p={p} tags={tags} categorias={categorias} onCerrar={() => setEditando(null)} onGuardado={async (msg) => { setEditando(null); setError(null); setAviso(msg); await recargar() }} />
+                : <FichaPerfil p={p} categoria={p.categoria ? nombreCategoria(p.categoria) : ''} reuniones={reuniones} onEditar={() => { setAviso(null); setEditando(p.id) }} />)}
             </li>
           )
         })}

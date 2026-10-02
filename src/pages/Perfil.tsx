@@ -36,6 +36,8 @@ export default function Perfil() {
           <p className="text-sm">{FRANJAS.filter((f) => perfil.franjas.includes(f.id)).map((f) => `${f.dia}, ${f.hora}`).join(' · ') || 'Sin franjas'}</p>
         </section>
       </article>
+      <Link to="/perfil/editar" className="btn-primario mt-4 w-full">Editar mi perfil</Link>
+      <p className="mt-2 text-center text-sm text-tinta-suave">Puedes cambiar tu nombre, foto, presentación, lo que buscas y ofreces y tus horarios cuando quieras.</p>
 
       {solicitudPendiente && (
         <div className="mt-4"><Aviso tipo="info">La organización está verificando tu participación como expositor{perfil.empresa?.stand_declarado ? ` (stand ${perfil.empresa.stand_declarado})` : ''}. Mientras tanto usas la app como asistente.</Aviso></div>
@@ -44,14 +46,13 @@ export default function Perfil() {
       <Representantes />
 
       <section className="tarjeta mt-4 space-y-1 p-5 text-sm">
-        <h2 className="mb-2 text-xs font-bold uppercase tracking-wider text-tinta-suave">Tu contacto · solo lo ven las personas con quienes tengas reunión</h2>
+        <h2 className="mb-2 text-xs font-bold uppercase tracking-wider text-tinta-suave">Tu contacto · lo ven tus matches desde el día de la feria</h2>
         <p>{perfil.email}</p>
         <p>{perfil.telefono ?? 'Sin celular registrado'}</p>
       </section>
 
       <div className="mt-6 space-y-3">
         {session?.user.app_metadata?.role === 'admin' && <Link to="/admin" className="btn w-full bg-tinta text-white">Panel de organización</Link>}
-        <Link to="/perfil/editar" className="btn-primario w-full">Editar mi perfil</Link>
       </div>
       <p className="mt-4 text-sm text-tinta-suave">No necesitas cerrar sesión: la app te recuerda en este celular durante la feria. Solo ciérrala si el celular no es tuyo.</p>
       <CerrarSesion />

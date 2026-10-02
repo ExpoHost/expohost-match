@@ -175,6 +175,8 @@ Al cerrar cada fase: resumen de lo hecho, lo pendiente y las decisiones que nece
 
 - **2-oct, Ver perfil en Personas (pedido de Lina):** botón "Ver perfil" (o tocar el nombre) despliega la ficha completa: foto, descripción, categoría, ciudad, busca, ofrece, horarios disponibles, correo, celular, empresa y stand, prioridad, información comercial, registro y última entrada, actividad y sus reuniones (de `admin_reuniones`, cargadas al abrir la primera ficha). Cambio 26: `admin_participantes` devuelve también `bio`, `ultima_entrada` y `acepta_comercial`.
 
+- **2-oct, editar perfiles (pedido de Lina):** cada persona edita su perfil cuando quiera desde Mi perfil → "Editar mi perfil" (botón movido justo debajo de la tarjeta; antes quedaba al final y no se encontraba) y la Ayuda explica cómo. La organización corrige los datos de cualquier persona desde Personas → Ver perfil → "Editar datos" (nombre, cargo, empresa, ciudad, categoría, celular, presentación, busca, ofrece, horarios), RPC `admin_editar_perfil` (solo admin, mismas validaciones, auditada; el nombre de la empresa cambia para toda la empresa; tipo, prioridad y stand siguen con sus botones). Cambio 27, pruebas 24–27 de la Fase 4.
+
 ## Cuentas y dónde viven las claves
 
 - GitHub: repositorio público `expohost-match`. GitHub Pages con dominio personalizado match.expohost.travel (CNAME → <usuario>.github.io).

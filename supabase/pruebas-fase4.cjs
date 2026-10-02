@@ -91,6 +91,19 @@ const reg = (u, franjas) => u.cli.rpc('completar_registro', { p_nombre: 'Persona
     const { data: pend } = await admin.rpc('pendientes_de_recordatorio');
     ok(Array.isArray(pend) && !pend.some((x) => emails.includes(x.email)), '22. Quien ya terminó su perfil o acaba de empezar no recibe recordatorio');
     ok(!!(await A.cli.rpc('pendientes_de_recordatorio')).error, '23. Un participante no puede ver la lista de pendientes de recordatorio');
+    // Edición de perfil: la persona cambia sus datos cuando quiera; la organización también puede, nadie más
+    const e1 = await A.cli.rpc('completar_registro', { p_nombre: 'Persona F4 Corregida', p_cargo: 'Directora', p_ciudad: 'Medellín', p_bio: 'Presentación nueva de prueba', p_telefono: '+57 3000000001', p_categoria: 'propietarios', p_empresa: 'Empresa ' + A.id.slice(0, 4), p_solicitud: '', p_stand: '', p_busca: ['Capital / inversión'], p_ofrece: ['Propiedades para operar'], p_franjas: ['mar-am'] });
+    const { data: pa } = await admin.from('profiles').select('nombre, cargo, bio, busca').eq('id', A.id).single();
+    ok(!e1.error && pa.nombre === 'Persona F4 Corregida' && pa.cargo === 'Directora' && pa.busca[0] === 'Capital / inversión', '24. Una persona cambia su nombre, cargo, presentación y lo que busca', e1.error?.message);
+    const datos = { p_user: B.id, p_nombre: 'Nombre Corregido Por Admin', p_cargo: 'Gerente', p_ciudad: 'Cali', p_bio: 'Ajustado por la organización', p_telefono: '+57 3110000000', p_categoria: 'property-managers', p_busca: ['Property management', 'Etiqueta inventada'], p_ofrece: ['Propiedades para operar'], p_franjas: ['mar-am', 'xx'], p_empresa: null };
+    const e2 = await A.cli.rpc('admin_editar_perfil', datos);
+    ok(!!e2.error, '25. Un participante no puede editar el perfil de otra persona', e2.error?.message);
+    const e3 = await AD.cli.rpc('admin_editar_perfil', datos);
+    const { data: pb } = await admin.from('profiles').select('nombre, busca, franjas, categoria').eq('id', B.id).single();
+    const { data: tb } = await admin.from('profiles_private').select('telefono').eq('user_id', B.id).single();
+    ok(!e3.error && pb.nombre === 'Nombre Corregido Por Admin' && pb.busca.length === 1 && pb.franjas.length === 1 && tb.telefono === '+57 3110000000', '26. La organización corrige el perfil de una persona (solo etiquetas y horarios válidos)', e3.error?.message);
+    const e4 = await AD.cli.rpc('admin_editar_perfil', { ...datos, p_telefono: '3110000000' });
+    ok(!!e4.error, '27. Un celular sin código de país se rechaza', e4.error?.message);
   } finally {
     const { data } = await admin.auth.admin.listUsers({ perPage: 1000 });
     for (const u of data.users.filter((u) => emails.includes(u.email))) await admin.auth.admin.deleteUser(u.id);
