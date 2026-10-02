@@ -41,7 +41,7 @@ const reg = (u, extra = {}) => u.cli.rpc('completar_registro', { p_nombre: 'Pers
     const r5a = await A.cli.rpc('contacto_de', { p_user: B.id });
     ok(!!r5a.error, '5a. contacto_de(B) desde A ANTES del match falla', r5a.error && r5a.error.message);
 
-    const fA = await A.cli.rpc('feed');
+    const fA = await A.cli.rpc('feed', { p_limit: 500 });  // con muchas personas reales, B puede no estar entre las 20 primeras
     ok(!fA.error && fA.data.some(p => p.id === B.id) && fA.data.every(p => !('email' in p) && !('telefono' in p)), '   Extra: feed de A incluye a B y no trae correo ni teléfono');
 
     const s1 = await A.cli.rpc('swipe', { p_to: B.id, p_liked: true });
@@ -61,8 +61,13 @@ const reg = (u, extra = {}) => u.cli.rpc('completar_registro', { p_nombre: 'Pers
     const res3 = await B.cli.rpc('reservar_reunion', { p_match: match, p_block: p.data[1].block_id });
     ok(!!res3.error, '   Extra: el mismo match no puede tener dos reuniones activas', res3.error && res3.error.message);
 
+    // El contacto de un match solo se ve desde el día de la feria (settings.contacto_desde); la organización siempre
+    const abierto = (await admin.rpc('contacto_abierto')).data === true;
     const r5b = await A.cli.rpc('contacto_de', { p_user: B.id });
-    ok(!r5b.error && r5b.data.length === 1 && !!r5b.data[0].email, '5b. contacto_de(B) desde A DESPUÉS del match funciona');
+    if (abierto) ok(!r5b.error && r5b.data.length === 1 && !!r5b.data[0].email, '5b. contacto_de(B) desde A DESPUÉS del match funciona (día de feria)');
+    else ok(!!r5b.error && /6 de octubre/.test(r5b.error.message), '5b. Antes del día de la feria, A no ve el contacto de su match B', r5b.error && r5b.error.message);
+    const r5p = await A.cli.rpc('contacto_de', { p_user: A.id });
+    ok(!r5p.error && r5p.data.length === 1, '   Extra: cada quien siempre ve su propio contacto', r5p.error && r5p.error.message);
     const r5c = await B.cli.rpc('contacto_de', { p_user: C.id });
     ok(!!r5c.error, '   Extra: B no ve el contacto de C (no hay match)', r5c.error && r5c.error.message);
 

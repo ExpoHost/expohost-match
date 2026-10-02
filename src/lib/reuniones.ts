@@ -1,3 +1,8 @@
+// El WhatsApp y el correo de los matches se ven desde el día de la feria (decisión de Lina).
+// La fecha real la guarda la base (settings.contacto_desde) y es la que manda; este valor es solo el de respaldo.
+export const CONTACTO_DESDE_POR_DEFECTO = '2026-10-06T06:00:00-05:00'
+export const textoContactoDesde = 'el martes 6 de octubre a las 6:00 a.m.'
+
 export type Propuesta = { block_id: number; dia: string; inicio: string; fin: string; lugar: 'stand' | 'mesa'; mesa: number | null; stand: string | null }
 
 export type MiMatch = {

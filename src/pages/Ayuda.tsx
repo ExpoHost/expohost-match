@@ -11,7 +11,8 @@ const PREGUNTAS: { q: string; a: string }[] = [
   { q: 'Toqué ♥ por error', a: 'En Perfiles, toca el botón ↶ para deshacer la última decisión. Si ya hubo match, en la pantalla del match hay un enlace "Deshacer este match". La otra persona no recibe ninguna notificación.' },
   { q: '¿Cómo agrego a un colega de mi empresa?', a: 'Si tu empresa es expositora, en "Mi perfil" verás tu empresa y un campo para agregar hasta 2 representantes más por correo. Cada uno crea su propio perfil con ese correo y tiene su propia agenda.' },
   { q: 'Soy expositor y no me aparece mi stand', a: 'Al registrarte, elige "Expositor con stand" y escribe tu número de stand. Si tu correo coincide con el registrado por la organización, quedas aprobado al instante; si no, la organización lo revisa en unas horas. Mientras tanto puedes usar la app normalmente.' },
-  { q: '¿Quién ve mi correo y mi celular?', a: 'Solo las personas con las que tengas una reunión confirmada, y cada consulta queda registrada. En las tarjetas nunca aparecen. Puedes eliminar tu cuenta cuando quieras desde "Mi perfil".' },
+  { q: '¿Cuándo veo el WhatsApp de las personas con las que tengo reunión?', a: 'El martes 6 de octubre a las 6:00 a.m., el día de la feria. Desde ese momento aparece en "Mi agenda", junto a cada reunión. Antes de eso ya pueden hacer match y dejar la cita agendada: el encuentro es en la feria.' },
+  { q: '¿Quién ve mi correo y mi celular?', a: 'Solo las personas con las que hiciste match, y solo desde el día de la feria. Cada consulta queda registrada. En las tarjetas nunca aparecen. Puedes eliminar tu cuenta cuando quieras desde "Mi perfil".' },
   { q: 'En la feria', a: 'Entra con tus datos móviles (el wifi del recinto puede ser lento). Llega 5 minutos antes al lugar de la reunión. Si necesitas ayuda, busca el match desk de la organización.' },
 ]
 

@@ -7,12 +7,26 @@ import { descargarCsv } from '../lib/csv'
 import { useSesion } from '../lib/sesion'
 import { supabase } from '../lib/supabase'
 import { avisarReunion } from '../lib/correos'
-import { descargarIcs, diaTexto, googleCalendarUrl, hora, horaFin, lugarTexto, whatsappUrl, type MiMatch, type Propuesta } from '../lib/reuniones'
+import { CONTACTO_DESDE_POR_DEFECTO, descargarIcs, diaTexto, googleCalendarUrl, hora, horaFin, lugarTexto, textoContactoDesde, whatsappUrl, type MiMatch, type Propuesta } from '../lib/reuniones'
 import { mensajeError } from '../lib/utilidades'
+
+// ¿Ya se puede ver el WhatsApp y el correo de los matches? (desde el día de la feria)
+function useContactoAbierto() {
+  const [desde, setDesde] = useState(CONTACTO_DESDE_POR_DEFECTO)
+  const [ahora, setAhora] = useState(() => Date.now())
+  useEffect(() => {
+    supabase.from('settings').select('value').eq('key', 'contacto_desde').maybeSingle()
+      .then(({ data }) => { if (typeof data?.value === 'string') setDesde(data.value) })
+    const t = setInterval(() => setAhora(Date.now()), 60_000)
+    return () => clearInterval(t)
+  }, [])
+  return ahora >= Date.parse(desde)
+}
 
 export default function Agenda() {
   const [items, setItems] = useState<MiMatch[] | null>(null)
   const [error, setError] = useState<string | null>(null)
+  const contactoAbierto = useContactoAbierto()
 
   const cargar = useCallback(async () => {
     const { data, error } = await supabase.rpc('mis_matches')
@@ -43,15 +57,19 @@ export default function Agenda() {
     return { r: r.x, falta: d <= 0 ? 'en curso' : d < 60 ? `en ${d} min` : `en ${Math.floor(d / 60)} h ${d % 60} min` }
   })()
 
-  // Expositores y proveedores: sus matches con contacto y notas, en CSV (cada contacto queda auditado)
+  // Expositores y proveedores: sus matches con notas, en CSV. El correo y el celular solo desde el día de la feria
+  // (cada contacto queda auditado); antes, esas columnas dicen cuándo se habilitan.
   async function exportar() {
     if (!items) return
     const [{ data: notas }, contactos] = await Promise.all([
       supabase.from('lead_notes').select('about_id, texto'),
-      Promise.all(items.map((m) => supabase.rpc('contacto_de', { p_user: m.otro_id }).then((r) => r.data?.[0] ?? null))),
+      contactoAbierto
+        ? Promise.all(items.map((m) => supabase.rpc('contacto_de', { p_user: m.otro_id }).then((r) => r.data?.[0] ?? null)))
+        : Promise.resolve(items.map(() => null)),
     ])
+    const pendiente = contactoAbierto ? '' : `se habilita ${textoContactoDesde}`
     descargarCsv('mis-matches', items.map((m, i) => ({
-      nombre: m.nombre, cargo: m.cargo, empresa: m.empresa, correo: contactos[i]?.email, celular: contactos[i]?.telefono,
+      nombre: m.nombre, cargo: m.cargo, empresa: m.empresa, correo: contactos[i]?.email ?? pendiente, celular: contactos[i]?.telefono ?? pendiente,
       reunion: m.dia ? `${diaTexto(m.dia)} ${hora(m.inicio!)} · ${lugarTexto(m)}` : 'sin agendar',
       notas: notas?.find((n) => n.about_id === m.otro_id)?.texto ?? '',
     })))
@@ -69,7 +87,7 @@ export default function Agenda() {
         </section>
       )}
       {esEmpresa && items && items.length > 0 && (
-        <button className="btn-secundario mt-3 text-sm" onClick={exportar}>Descargar mis contactos (Excel)</button>
+        <button className="btn-secundario mt-3 text-sm" onClick={exportar}>{contactoAbierto ? 'Descargar mis contactos (Excel)' : 'Descargar mis matches (Excel)'}</button>
       )}
       {error && <div className="mt-4"><Aviso>{error}</Aviso></div>}
       {items === null && !error && <p className="mt-6 text-tinta-suave" role="status">Cargando…</p>}
@@ -85,7 +103,8 @@ export default function Agenda() {
       {reuniones.length > 0 && (
         <section className="mt-6 space-y-3">
           <h2 className="text-sm font-bold uppercase tracking-wider text-tinta-suave">Tus reuniones confirmadas ({reuniones.length})</h2>
-          {reuniones.map((r) => <Reunion key={r.meeting_id} r={r} onCambio={cargar} />)}
+          {!contactoAbierto && <p className="text-sm text-tinta-suave">El WhatsApp y el correo de cada persona aparecen aquí {textoContactoDesde}, el día de la feria. Hasta entonces, la cita ya está agendada: nos vemos en ExpoHost.</p>}
+          {reuniones.map((r) => <Reunion key={r.meeting_id} r={r} onCambio={cargar} contactoAbierto={contactoAbierto} />)}
         </section>
       )}
 
@@ -109,7 +128,7 @@ export default function Agenda() {
   )
 }
 
-function Reunion({ r, onCambio }: { r: MiMatch; onCambio: () => void }) {
+function Reunion({ r, onCambio, contactoAbierto }: { r: MiMatch; onCambio: () => void; contactoAbierto: boolean }) {
   const [contacto, setContacto] = useState<{ email: string; telefono: string | null } | null>(null)
   const [confirmarCancelar, setConfirmarCancelar] = useState(false)
   const [cancelando, setCancelando] = useState(false)
@@ -151,8 +170,10 @@ function Reunion({ r, onCambio }: { r: MiMatch; onCambio: () => void }) {
           )}
           <a href={`mailto:${contacto.email}`} className="btn-secundario w-full">{contacto.email}</a>
         </div>
-      ) : (
+      ) : contactoAbierto ? (
         <button className="btn-secundario mt-4 w-full" onClick={verContacto}>Ver contacto</button>
+      ) : (
+        <p className="mt-4 rounded-2xl bg-hueso px-4 py-3 text-sm text-tinta-suave">Su WhatsApp y su correo aparecen aquí {textoContactoDesde}, el día de la feria.</p>
       )}
 
       <div className="mt-2 grid grid-cols-2 gap-2">
